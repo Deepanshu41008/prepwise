@@ -248,8 +248,6 @@ Object.assign(window.App, {
   async ensureChapterLoaded(chapName) {
     if (!chapName || chapName === 'ALL') return;
     try {
-      const existing = await db.questions.where('chapter').equals(chapName).count();
-      if (existing >= 50) return;
       const file = this.findChapterFile(chapName);
       if (file) {
         await this.loadChapterShard(file);

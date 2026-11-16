@@ -149,7 +149,7 @@ Object.assign(window.App, {
     const bannerText = document.getElementById('syncBannerText');
     const progressEl = document.getElementById('syncBannerProgress');
     if (banner) banner.style.display = 'flex';
-    if (bannerText) bannerText.textContent = 'Vault Ingestion: Caching all 69 chapters into IndexedDB...';
+    if (bannerText) bannerText.textContent = 'Vault Ingestion: Caching all 81 chapters into IndexedDB...';
 
     const streamerLog = document.getElementById('streamerLog');
     const streamerBar = document.getElementById('streamerProgressBar');
