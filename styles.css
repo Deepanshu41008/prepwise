@@ -1,3 +1,7 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 :root {
   --ink: #18212b;
   --muted: #64748b;
@@ -32,18 +36,39 @@ button { cursor: pointer; }
 h1, h2, h3, p { margin: 0; }
 .app { display: flex; min-height: 100vh; width: 100%; }
 .sidebar {
-  width: 260px;
+  width: 270px;
+  min-width: 270px;
+  max-width: 270px;
   background: var(--white);
   border-right: 1px solid var(--line);
-  padding: 24px 16px;
+  padding: 20px 14px 40px;
   display: flex;
   flex-direction: column;
   position: sticky;
   top: 0;
   height: 100vh;
+  max-height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  z-index: 100;
+}
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+  display: block;
+}
+.sidebar::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--teal);
 }
 .main {
   flex: 1;
@@ -71,30 +96,41 @@ h1, h2, h3, p { margin: 0; }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--teal);
 }
-.brand { font: 700 24px 'Space Grotesk'; letter-spacing: -1px; padding: 0 12px 28px; }
+.brand {
+  font: 700 24px 'Space Grotesk';
+  letter-spacing: -1px;
+  padding: 0 12px 20px;
+  flex-shrink: 0;
+}
 .brand span, .eyebrow { color: var(--teal); }
-.nav { display: grid; gap: 6px; }
+.nav {
+  display: grid;
+  gap: 6px;
+  flex-shrink: 0;
+}
 .nav button {
   background: none;
   text-align: left;
   color: var(--muted);
-  padding: 12px 14px;
+  padding: 11px 14px;
   border-radius: 10px;
   font-weight: 600;
   transition: .15s;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 .nav button.active, .nav button:hover { background: var(--mint); color: var(--teal); }
 .nav i { font-style: normal; margin-right: 10px; font-size: 16px; width: 20px; }
 .side-bottom {
-  margin-top: auto;
+  margin-top: 24px;
   border-top: 1px solid var(--line);
-  padding: 16px 12px 0;
+  padding: 16px 8px 48px;
   color: var(--muted);
   font-size: 12px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 .profile { display: flex; align-items: center; gap: 10px; color: var(--ink); font-weight: 700; }
 .avatar {
@@ -123,7 +159,6 @@ h1, h2, h3, p { margin: 0; }
   display: block;
 }
 .cloud-btn:hover { background: var(--mint); border-color: var(--teal); }
-.main { flex: 1; max-width: 1320px; margin: auto; padding: 28px 38px; width: 100%; }
 .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 26px; flex-wrap: wrap; gap: 12px; }
 .eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 1.4px; font-weight: 700; margin-bottom: 6px; }
 .topbar h1 { font: 700 28px 'Space Grotesk'; letter-spacing: -0.8px; }
@@ -537,11 +572,15 @@ h1, h2, h3, p { margin: 0; }
   .app { flex-direction: column; padding-bottom: 70px; }
   .sidebar {
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
     height: auto;
+    max-height: none;
     position: static;
     padding: 12px 14px;
     border-right: none;
     border-bottom: 1px solid var(--line);
+    overflow-y: visible;
   }
   .brand { font-size: 20px; padding: 0 4px 10px; }
   .brand span { font-size: 20px; }
@@ -549,13 +588,15 @@ h1, h2, h3, p { margin: 0; }
     display: flex;
     overflow-x: auto;
     gap: 6px;
-    padding-bottom: 4px;
+    padding-bottom: 6px;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
   }
   .nav button {
     font-size: 13px !important;
     white-space: nowrap;
     padding: 8px 12px;
+    flex-shrink: 0;
   }
   .nav i { font-size: 15px; margin-right: 6px; }
   .nav-section-label { display: none; }
