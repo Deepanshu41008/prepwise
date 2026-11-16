@@ -1,0 +1,983 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f766e">
+<title>Prepwise — Dynamic NEET-UG Command Center & Full Mocks Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<!-- Fast External Modules & Pre-calculated Hierarchy Metadata -->
+<script src="https://unpkg.com/dexie@4.0.8/dist/dexie.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="data/seed_meta.js"></script>
+<script defer src="data/seed_pack.js"></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand" title="PrepWise NEET-UG">prep<span>wise</span></div>
+    <nav class="nav">
+      <div class="nav-section-label">PRACTICE MODES</div>
+      <button class="active" data-view="dashboard" onclick="App.showView('dashboard')" title="Home Dashboard"><i>🏠</i>Home</button>
+      <button data-view="timedEndlessSetup" onclick="App.openTimedEndlessSetup()" title="Timed Multi-Topic Marathon"><i>⏱️</i>Timed Marathon <span class="nav-pill-badge">Hot</span></button>
+      <button data-view="mocksHubView" onclick="App.showMocksHub()" title="Full 720-Mark Mock Exams"><i>📝</i>Full Mock Tests</button>
+      <button data-view="setup" onclick="App.openSetup()" title="Practice Specific Chapter & Subtopics"><i>🎯</i>Chapter Practice</button>
+      <button data-view="confidence" onclick="App.startConfidenceMode()" title="Untimed Calm Practice"><i>⚡</i>Calm Practice</button>
+
+      <div class="nav-section-label" style="margin-top:14px">MY REVISION</div>
+      <button data-view="growthBoardView" onclick="App.showGrowthBoard()" title="Track Your Accuracy, Speed & Scores"><i>📈</i>My Growth Board</button>
+      <button data-view="mistakesView" onclick="App.showMistakes()" title="Review Questions You Got Wrong"><i>❌</i>My Mistakes <span id="navMistakeCount" class="nav-pill-badge" style="background:#fee2e2;color:#dc2626;display:none">0</span></button>
+      <button data-view="bookmarksView" onclick="App.showBookmarks()" title="Questions You Starred"><i>⭐</i>Saved Questions</button>
+      <button data-view="progressView" onclick="App.showProgress()" title="Speed vs Accuracy Breakdown"><i>📊</i>Speed Matrix</button>
+    </nav>
+    <div class="side-bottom">
+      <div class="profile" title="Target: NEET-UG Aspirant">
+        <span class="avatar">🩺</span>
+        <div>
+          <div style="font-size:13px;font-weight:700">Future Doctor</div>
+          <div style="font-size:11px;color:var(--muted)">Target: NEET-UG 2025/26</div>
+        </div>
+      </div>
+      <div class="student-bank-badge">
+        <span>📚 Offline Question Bank</span>
+        <b id="dbCountBadge">5.64 Lakh Questions Ready</b>
+      </div>
+      <details class="advanced-settings-drawer" style="margin-top:2px">
+        <summary style="cursor:pointer;font-size:11px;color:var(--muted);user-select:none;padding:4px 0;">⚙️ Advanced & Storage</summary>
+        <div style="display:grid;gap:6px;margin-top:6px;">
+          <button class="cloud-btn" onclick="App.showDiagnostics()" title="System Integrity & Stats" style="font-size:11px;padding:6px;">📋 System Stats</button>
+          <button class="cloud-btn" onclick="App.showView('streamerView')" title="Mass Question Vault" style="font-size:11px;padding:6px;">⚡ Dataset Streamer</button>
+          <label class="cloud-btn" for="localJsonInput" title="Import Local JSON" style="font-size:11px;padding:6px;">+ Import JSON<input type="file" id="localJsonInput" accept=".json" multiple style="display:none" onchange="App.importFiles(this.files)"></label>
+        </div>
+      </details>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div id="syncBanner" class="sync-banner" style="display:none">
+      <span id="syncBannerText">⚡ Storing master questions permanently into your device's IndexedDB database...</span>
+      <span id="syncBannerProgress" style="font-family:'JetBrains Mono'">0%</span>
+    </div>
+
+    <!-- 1. DASHBOARD VIEW -->
+    <section id="dashboard">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow" title="NEET-UG Command Hub">🩺 NEET-UG 2025 / 2026 PREPARATION HUB</div>
+          <h1 title="Welcome">Welcome, Future Doctor! 👋</h1>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <input type="text" id="chapterSearch" class="search-bar" placeholder="🔍 Search any chapter (e.g. Optics, Genetics, Equilibrium)..." oninput="App.onSearchInput(this.value)" title="Search Syllabus (81 Chs)">
+          <div class="class-pills" id="dashClassPills" title="Class Filter"></div>
+        </div>
+      </header>
+
+      <!-- 3-STEP STUDENT HOW-IT-WORKS BANNER -->
+      <div class="how-it-works-banner">
+        <div class="how-it-works-header">
+          <div style="font:700 14px 'Space Grotesk';color:var(--teal);letter-spacing:0.5px;">💡 HOW TO CRACK NEET WITH PREPWISE</div>
+          <span style="font-size:12px;color:var(--muted);font-weight:600;">3 Easy Steps</span>
+        </div>
+        <div class="how-steps-grid">
+          <div class="how-step">
+            <span class="how-step-icon">🎯</span>
+            <div>
+              <div class="how-step-title">1. Pick Your Practice Mode</div>
+              <div class="how-step-desc">Choose a Timed Marathon, Full Mock Test, or practice a single chapter below.</div>
+            </div>
+          </div>
+          <div class="how-step">
+            <span class="how-step-icon">💡</span>
+            <div>
+              <div class="how-step-title">2. Use Progressive Hints</div>
+              <div class="how-step-desc">Stuck on a tricky question? Unlock Hint 1 (Principle), Hint 2 (Formula), or Hint 3 (Trap Alert).</div>
+            </div>
+          </div>
+          <div class="how-step">
+            <span class="how-step-icon">❌</span>
+            <div>
+              <div class="how-step-title">3. Fix Mistakes in Growth Board</div>
+              <div class="how-step-desc">Wrong questions are saved to your Mistake Vault with full NCERT solutions!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <section class="hero">
+          <div class="eyebrow" style="color:#ccfbf1">81 Chapters · 705 Micro-Topics · 564,000 Authentic Questions</div>
+          <h2>Master every NCERT concept for NEET-UG</h2>
+          <p>Practice authentic questions with step-by-step NCERT solutions, progressive hints, timed marathons, and official NTA examination hall mocks.</p>
+          
+          <div class="hero-action-grid">
+            <div class="hero-action-card" onclick="App.openTimedEndlessSetup()">
+              <div>
+                <div class="ha-icon">⏱️</div>
+                <div class="ha-title">Timed Marathon</div>
+                <div class="ha-desc">Endless questions with 15–120m timer</div>
+              </div>
+              <div class="ha-cta">Start Marathon →</div>
+            </div>
+
+            <div class="hero-action-card" onclick="App.showMocksHub()">
+              <div>
+                <div class="ha-icon">📝</div>
+                <div class="ha-title">Full Mock Tests</div>
+                <div class="ha-desc">720-mark simulated NTA examination</div>
+              </div>
+              <div class="ha-cta">Take Mock Test →</div>
+            </div>
+
+            <div class="hero-action-card" onclick="App.openSetup()">
+              <div>
+                <div class="ha-icon">🎯</div>
+                <div class="ha-title">Chapter Drill</div>
+                <div class="ha-desc">Pick any chapter or micro-subtopic</div>
+              </div>
+              <div class="ha-cta">Pick Chapter →</div>
+            </div>
+
+            <div class="hero-action-card" onclick="App.showGrowthBoard()">
+              <div>
+                <div class="ha-icon">📈</div>
+                <div class="ha-title">Growth Board</div>
+                <div class="ha-desc">Speed, accuracy & GMC qualification</div>
+              </div>
+              <div class="ha-cta">My Growth →</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="streak" title="Lifetime Net Score">
+            <div><small>Your Net Score (+4 / -1)</small><strong id="lifetimeScore">0 pts</strong></div>
+            <span class="tag" title="NEET Scale (+4 / -1)">NEET Scale</span>
+          </div>
+          <div class="bar" title="Accuracy Meter"><div class="bar-fill" id="streakBar"></div></div>
+          <div class="stats-grid">
+            <div class="stat-pill" title="Total Attempted"><small>Questions Solved</small><b id="attempted">0</b></div>
+            <div class="stat-pill" title="Overall Accuracy"><small>Accuracy</small><b id="accuracy">—</b></div>
+            <div class="stat-pill" title="Negative Marks Lost"><small>Negative Marks Lost</small><b id="negBleed" style="color:var(--red)">0</b></div>
+            <div class="stat-pill" title="Offline Bank"><small>Total Bank Size</small><b>5.64 Lakh Qs</b></div>
+          </div>
+          <div style="margin-top:16px;">
+            <button class="secondary" style="width:100%;font-size:13px;padding:8px;" onclick="App.showMistakes()">❌ Review My Mistakes Vault →</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="subj-tabs" id="dashSubjTabs" style="margin-bottom:18px"></div>
+      <div class="topics" id="topicCards"></div>
+    </section>
+
+    <!-- 2. FULL MOCKS HUB VIEW -->
+    <section id="mocksHubView" style="display:none">
+      <div class="breadcrumb"><span class="crumb-link" onclick="App.showView('dashboard')">Home</span> / <span>Full Mocks Hub</span></div>
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <button class="back-btn" onclick="App.showView('dashboard')"><i>←</i> Back to Home</button>
+          <div>
+            <div class="eyebrow">Official NTA CBT Examination Hall</div>
+            <h1>Full Mocks Hub (720 Marks)</h1>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="primary" onclick="App.startCustomMockModal()" title="Custom Mock Builder">⚡ Custom Mock & Timer Builder</button>
+        </div>
+      </header>
+
+      <!-- KPI Summary Banner -->
+      <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 24px;">
+        <div class="card" title="Mocks Completed">
+          <span class="tag">Mocks Completed</span>
+          <h2 id="kpiMockAttempts" style="margin: 8px 0; font-size: 28px; font-weight:700;">0 Papers</h2>
+          <small style="color:var(--muted)">Full 720-mark simulated attempts</small>
+        </div>
+        <div class="card" title="Average Mock Score">
+          <span class="tag" style="background:#dcfce7;color:var(--emerald);">Average Mock Score</span>
+          <h2 id="kpiAvgScore" style="margin: 8px 0; font-size: 28px; font-weight:700; color:var(--emerald);">— / 720</h2>
+          <small style="color:var(--muted)">Target: 650+ for Top State GMC</small>
+        </div>
+        <div class="card" title="Projected AIR Rank">
+          <span class="tag" style="background:#e0f2fe;color:#0284c7;">Projected AIR Rank</span>
+          <h2 id="kpiRankEstimate" style="margin: 8px 0; font-size: 28px; font-weight:700; color:#0284c7;">Ready to Predict</h2>
+          <small style="color:var(--muted)">Based on actual NEET 2024 percentiles</small>
+        </div>
+        <div class="card" title="Question Vault Reserve">
+          <span class="tag" style="background:#fef3c7;color:#b45309;">Question Bank Reserve</span>
+          <h2 style="margin: 8px 0; font-size: 28px; font-weight:700; color:#b45309;">5.64 Lakh+ Qs</h2>
+          <small style="color:var(--muted)">81 Chapters · 705 Subtopics · 60% Hard Topics</small>
+        </div>
+      </div>
+
+      <!-- SERIES 1: NATIONAL LEVEL 720-MARK FULL MOCKS -->
+      <div style="margin-bottom: 32px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <h2 style="font:700 22px 'Space Grotesk'">National Level NEET-UG Full Mocks (720 Marks)</h2>
+            <p style="color:var(--muted);font-size:13px">Official NTA Pattern: 200 Questions (180 to attempt) · 200 Minutes · Section A (35 Qs) & Section B (15 Qs, choose 10)</p>
+          </div>
+        </div>
+
+        <div class="mock-grid">
+          <!-- Mock 1 -->
+          <div class="mock-card" title="Mock 01: NTA Benchmark">
+            <div class="mock-badges">
+              <span class="tag" style="background:#dcfce7;color:var(--emerald)">Flagship Benchmark</span>
+              <span class="tag">200 Qs · 200 Mins</span>
+              <span class="tag">720 Marks</span>
+            </div>
+            <h3>NEET Mock 01: All-India National Benchmark</h3>
+            <p>Balanced NTA 2024 actual difficulty. Proportional distribution across Mechanics, Physical & Organic Chemistry, Genetics, and Human Physiology.</p>
+            <button class="primary" style="width:100%" onclick="App.launchFullMockPreset('standard_01')" title="Start Full Mock 01">▶ Start Full Mock 01 (200 Mins)</button>
+          </div>
+
+          <!-- Mock 2 -->
+          <div class="mock-card" title="Mock 02: AIIMS Challenger">
+            <div class="mock-badges">
+              <span class="tag" style="background:#fee2e2;color:var(--red)">AIIMS Tier / Challenger</span>
+              <span class="tag">200 Qs · 200 Mins</span>
+              <span class="tag">720 Marks</span>
+            </div>
+            <h3>NEET Mock 02: AIIMS Super-Challenger Paper</h3>
+            <p>Designed for 680+ scorers. Heavy on rotational dynamics, thermodynamics equations, multi-step organic synthesis, and molecular biology analytical deductions.</p>
+            <button class="primary" style="width:100%;background:#0b5650" onclick="App.launchFullMockPreset('aiims_02')" title="Start AIIMS Mock 02">▶ Start AIIMS Mock 02 (200 Mins)</button>
+          </div>
+
+          <!-- Mock 3 -->
+          <div class="mock-card" title="Mock 03: NCERT Line-by-Line">
+            <div class="mock-badges">
+              <span class="tag" style="background:#e0f2fe;color:#0284c7">NCERT Line-to-Line</span>
+              <span class="tag">200 Qs · 200 Mins</span>
+              <span class="tag">720 Marks</span>
+            </div>
+            <h3>NEET Mock 03: NCERT Pure Line-by-Line Paper</h3>
+            <p>100% textbook statement extractions, diagrammatic biology assertions, and inorganic periodic trends. Eliminates careless syllabus misreads.</p>
+            <button class="primary" style="width:100%" onclick="App.launchFullMockPreset('ncert_03')" title="Start NCERT Paper 03">▶ Start NCERT Paper 03 (200 Mins)</button>
+          </div>
+
+          <!-- Mock 4 -->
+          <div class="mock-card" title="Mock 04: PYQ High-Yield">
+            <div class="mock-badges">
+              <span class="tag" style="background:#fef3c7;color:#b45309">PYQ Synthesized</span>
+              <span class="tag">200 Qs · 200 Mins</span>
+              <span class="tag">720 Marks</span>
+            </div>
+            <h3>NEET Mock 04: Past 5-Year High-Yield Repeat Paper</h3>
+            <p>Synthesized from the highest-frequency question models, formula traps, and recurring NCERT concepts from 2019 to 2024 NEET papers.</p>
+            <button class="primary" style="width:100%" onclick="App.launchFullMockPreset('pyq_04')" title="Start PYQ Paper 04">▶ Start PYQ Repeat Paper 04</button>
+          </div>
+
+          <!-- Mock 5 -->
+          <div class="mock-card" title="Mock 05: Trap Buster">
+            <div class="mock-badges">
+              <span class="tag" style="background:#f3e8ff;color:var(--purple)">Negative-Bleed Buster</span>
+              <span class="tag">200 Qs · 200 Mins</span>
+              <span class="tag">720 Marks</span>
+            </div>
+            <h3>NEET Mock 05: Speed Trap & Negative-Bleed Buster</h3>
+            <p>Specially engineered with tricky closely-worded options, unit traps, and statement eliminations to train maximum exam-hall restraint.</p>
+            <button class="primary" style="width:100%;background:var(--purple)" onclick="App.launchFullMockPreset('trap_05')" title="Start Trap Buster Mock 05">▶ Start Trap Buster Mock 05</button>
+          </div>
+
+          <!-- Custom Mock Card -->
+          <div class="mock-card" style="border: 2px dashed var(--teal); background: #f0fdfa;" title="Custom Mock Builder">
+            <div class="mock-badges">
+              <span class="tag" style="background:var(--teal);color:var(--white)">Custom Configurator</span>
+              <span class="tag">Any Subject · Any Time</span>
+            </div>
+            <h3>Custom Mock & Practice Time Builder</h3>
+            <p>Pick your own syllabus (Class 11 / Class 12 / Full NEET), choose 45, 90, 180, or 200 questions, and set practice timer from 45 mins to 200 mins.</p>
+            <button class="secondary" style="width:100%;border-color:var(--teal);color:var(--teal);font-weight:700" onclick="App.startCustomMockModal()" title="Configure Custom Paper">⚙ Configure Custom Paper</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SERIES 2: SUBJECT-WISE POWER PAPERS -->
+      <div style="margin-bottom: 32px;">
+        <h2 style="font:700 22px 'Space Grotesk';margin-bottom:6px">Subject-Wise Full Papers (Sprint Practice)</h2>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:14px">Focused 50-Q and 100-Q timed papers to eliminate weak subject barriers.</p>
+
+        <div class="mock-grid">
+          <div class="mock-card" title="Physics Sprint (50 Qs)">
+            <span class="tag">Physics · 50 Qs · 50 Mins</span>
+            <h3>Physics Mastery Paper (180 Marks)</h3>
+            <p>Section A (35 Qs) + Section B (15 Qs, choose 10). Mechanics, Electrodynamics, Optics, and Modern Physics.</p>
+            <button class="secondary" onclick="App.launchSubjectMock('Physics', 50, 50)" title="Start Physics Paper">▶ Launch Physics Paper (50 Mins)</button>
+          </div>
+
+          <div class="mock-card" title="Chemistry Sprint (50 Qs)">
+            <span class="tag">Chemistry · 50 Qs · 50 Mins</span>
+            <h3>Chemistry Complete Paper (180 Marks)</h3>
+            <p>Section A (35 Qs) + Section B (15 Qs, choose 10). Physical formulas, Inorganic trends, and Organic reaction pathways.</p>
+            <button class="secondary" onclick="App.launchSubjectMock('Chemistry', 50, 50)" title="Start Chemistry Paper">▶ Launch Chemistry Paper (50 Mins)</button>
+          </div>
+
+          <div class="mock-card" title="Biology 360 (100 Qs)">
+            <span class="tag" style="background:#dcfce7;color:var(--emerald)">Biology 360 · 100 Qs · 90 Mins</span>
+            <h3>Biology 360/360 Perfection Paper</h3>
+            <p>50 Botany + 50 Zoology questions. Complete NCERT Class 11 and 12 biology revision in 90 minutes.</p>
+            <button class="secondary" style="border-color:var(--emerald);color:var(--emerald)" onclick="App.launchSubjectMock('Biology', 100, 90)" title="Start Biology Paper">▶ Launch Biology 360 Paper (90 Mins)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SERIES 3: FULL MOCK ATTEMPT HISTORY -->
+      <div class="card">
+        <h3 style="margin-bottom: 12px;">Full Mock Attempt Timeline</h3>
+        <div id="fullMockHistoryList">
+          <div class="empty">No full-length mock exams submitted yet. Launch Mock 01 above to establish your baseline score.</div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- 2.5 TIMED ENDLESS MARATHON PRACTICE VIEW -->
+    <section id="timedEndlessSetup" style="display:none">
+      <div class="breadcrumb"><span class="crumb-link" onclick="App.showView('dashboard')">Home</span> / <span>Timed Marathon</span></div>
+      <div class="practice-top">
+        <button class="back-btn" onclick="App.showView('dashboard')"><i>←</i> Back to Home</button>
+        <div>
+          <div class="eyebrow">Endless Practice · Custom Countdown Timer</div>
+          <h1>Timed Multi-Topic Marathon</h1>
+        </div>
+      </div>
+
+      <div class="te-container">
+        <!-- 1. Duration Picker Card -->
+        <div class="te-setup-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div>
+              <h3 style="font:700 18px 'Space Grotesk'">1. Select Marathon Duration</h3>
+              <p style="color:var(--muted);font-size:13px">Practice endless questions continuously until your chosen timer runs down.</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:13px;font-weight:600;color:var(--muted)">Custom Mins:</span>
+              <input type="number" id="teCustomMinutes" min="1" max="300" value="60" oninput="App.onTeCustomInput(this.value)" style="width:75px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;font-family:'JetBrains Mono';font-weight:700;font-size:14px;text-align:center;">
+            </div>
+          </div>
+
+          <div class="te-timer-chips" id="teTimerChips">
+            <button class="te-chip" onclick="App.setTeDuration(15)">15 Mins (Sprint)</button>
+            <button class="te-chip" onclick="App.setTeDuration(30)">30 Mins (Power)</button>
+            <button class="te-chip" onclick="App.setTeDuration(45)">45 Mins (Standard)</button>
+            <button class="te-chip active" onclick="App.setTeDuration(60)">60 Mins (1 Hour Marathon)</button>
+            <button class="te-chip" onclick="App.setTeDuration(90)">90 Mins (Deep Practice)</button>
+            <button class="te-chip" onclick="App.setTeDuration(120)">120 Mins (Endurance)</button>
+          </div>
+
+          <!-- Difficulty Profile -->
+          <div style="border-top:1px solid var(--line);padding-top:16px;margin-top:16px;">
+            <label style="font-weight:700;font-size:14px;color:var(--ink);display:block;margin-bottom:8px;">2. Select Difficulty Profile</label>
+            <div class="difficulty">
+              <label title="Random / Mixed Difficulty"><input type="radio" name="teDiff" value="random" checked> 🎲 Random / Mixed (Recommended)</label>
+              <label title="Easy Tier"><input type="radio" name="teDiff" value="easy"> Foundational Easy (1 Hint)</label>
+              <label title="Medium Tier"><input type="radio" name="teDiff" value="medium"> Standard Medium (2 Hints)</label>
+              <label title="Hard Tier"><input type="radio" name="teDiff" value="hard"> AIIMS-Tier Hard (3 Hints)</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Multi-Topic Selection Card -->
+        <div class="te-setup-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+            <div>
+              <h3 style="font:700 18px 'Space Grotesk'">3. Select Topics (Multiple in One Go)</h3>
+              <p style="color:var(--muted);font-size:13px">Pick any combination of chapters across Physics, Chemistry, Botany, and Zoology.</p>
+            </div>
+            <span id="teSelectedCountBadge" class="tag" style="background:#ccfbf1;color:var(--teal);font-weight:700;font-size:13px;padding:6px 12px;">81 Topics Selected</span>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+            <button class="secondary" style="padding:6px 12px;font-size:12px;" onclick="App.selectAllTeChapters()">Select All (81)</button>
+            <button class="secondary" style="padding:6px 12px;font-size:12px;" onclick="App.selectTeSubject('Physics')">Physics (24)</button>
+            <button class="secondary" style="padding:6px 12px;font-size:12px;" onclick="App.selectTeSubject('Chemistry')">Chemistry (22)</button>
+            <button class="secondary" style="padding:6px 12px;font-size:12px;" onclick="App.selectTeSubject('Botany')">Botany (20)</button>
+            <button class="secondary" style="padding:6px 12px;font-size:12px;" onclick="App.selectTeSubject('Zoology')">Zoology (15)</button>
+            <button class="secondary" style="padding:6px 12px;font-size:12px;color:var(--red);border-color:#fca5a5" onclick="App.clearTeChapters()">Clear All</button>
+            <input type="text" id="teTopicSearch" placeholder="🔍 Filter topics..." oninput="App.filterTeChapters(this.value)" style="flex:1;min-width:160px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;">
+          </div>
+
+          <div id="teTopicsGrid" class="te-topics-grid">
+            <!-- Dynamic topic cards -->
+          </div>
+
+          <div style="margin-top:22px;display:flex;gap:12px;align-items:center;">
+            <button class="primary" style="flex:1;padding:14px;font-size:16px;background:#7c3aed;" onclick="App.startTimedEndlessSession()" title="Start Marathon">
+              ⚡ Launch Timed Endless Marathon →
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. SETUP VIEW (SUBTOPIC DRILL) -->
+    <section id="setup" class="setup" style="display:none">
+      <div class="breadcrumb"><span class="crumb-link" onclick="App.showView('dashboard')">Home</span> / <span>Chapter Practice Drill</span></div>
+      <div class="practice-top">
+        <button class="back-btn" onclick="App.showView('dashboard')"><i>←</i> Back to Home</button>
+        <div><div class="eyebrow">Targeted Practice Filter</div><h1>Configure Chapter Practice Drill</h1></div>
+      </div>
+      <div class="setup-card">
+        <div class="form-grid">
+          <div class="field">
+            <label for="classSelect">Class Level</label>
+            <select id="classSelect" onchange="App.onClassChange()" title="Select Class"></select>
+          </div>
+          <div class="field">
+            <label for="subjectSelect">Subject</label>
+            <select id="subjectSelect" onchange="App.onSubjectChange()" title="Select Subject"></select>
+          </div>
+          <div class="field">
+            <label for="topicSelect">Chapter</label>
+            <select id="topicSelect" onchange="App.onChapterChange()" title="Select Chapter (81 Chs)"></select>
+          </div>
+          <div class="field">
+            <label for="subtopicSelect">Subtopic</label>
+            <select id="subtopicSelect" title="Select Subtopic (705 Concepts)"></select>
+          </div>
+          <div class="field">
+            <label for="countSelect">Question Count</label>
+            <select id="countSelect" title="Question Count">
+              <option value="5">5 Questions (Quick)</option>
+              <option value="15" selected>15 Questions (Standard)</option>
+              <option value="30">30 Questions (Deep Dive)</option>
+              <option value="45">45 Questions (Full Subtopic Mastery)</option>
+              <option value="60">60 Questions (Intensive)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="statusSelect">Attempt Filter</label>
+            <select id="statusSelect" title="Attempt Filter">
+              <option value="all">All Questions</option>
+              <option value="mistakes">Previously Wrong Only</option>
+            </select>
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <label>Difficulty Filter</label>
+            <div class="difficulty">
+              <label title="All Difficulties"><input type="radio" name="difficulty" value="mixed" checked> All Difficulties</label>
+              <label title="Easy (1 Clue Hint)"><input type="radio" name="difficulty" value="easy"> Easy</label>
+              <label title="Medium (2 Hints)"><input type="radio" name="difficulty" value="medium"> Medium</label>
+              <label title="Hard (3 Hints)"><input type="radio" name="difficulty" value="hard"> Hard</label>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:22px;flex-wrap:wrap;">
+          <button class="primary" style="flex:1" onclick="App.startSubtopicDrill()" title="Start Practice Drill">Launch Drill (+4 / -1 Marking) →</button>
+          <button class="secondary" style="border-color:var(--teal);color:var(--teal)" onclick="App.startInfiniteDrill(document.getElementById('subjectSelect').value, Number(document.getElementById('countSelect').value))" title="Start Infinite Drill">⚡ Infinite Procedural Drill</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. PRACTICE & CBT EXAM VIEW -->
+    <section id="practice" class="practice" style="display:none">
+      <div class="practice-top">
+        <button class="back-btn" onclick="App.exitPractice()" title="Exit Practice Session"><i>←</i> Exit Session</button>
+        <div style="flex:1">
+          <div class="eyebrow" id="practiceEyebrow">Drill</div>
+          <h1 id="practiceTitle"></h1>
+        </div>
+        <div class="pacing-badge" id="cbtPacingBadge" style="display:none" title="Pacing Monitor">⏱️ Pacing: —</div>
+        <div class="mono-badge" id="mockCountdown" style="display:none" title="Exam Countdown">200:00</div>
+        <div class="mono-badge" id="questionTimer" title="Question Timer">00:00s</div>
+        <div class="mono-badge" id="confidenceStreakBadge" style="display:none" title="Correct Streak">⚡ Streak: 0</div>
+        <button class="secondary" id="teEarlyFinishBtn" style="display:none;border-color:var(--red);color:var(--red);font-weight:700;padding:6px 14px;border-radius:6px;" onclick="App.finishTimedEndlessSession()" title="Finish Marathon">⏹ Finish Marathon</button>
+      </div>
+
+      <!-- NTA SUBJECT SWITCHER (Shown in Full Mocks) -->
+      <div id="cbtSubjectTabsWrap" style="display:none;">
+        <div class="subject-tabs-bar" id="cbtSubjectTabs">
+          <button class="subj-tab-btn active" onclick="App.switchSubjectTab('Physics')" title="Physics Section (Q1–50)">Physics (50)</button>
+          <button class="subj-tab-btn" onclick="App.switchSubjectTab('Chemistry')" title="Chemistry Section (Q51–100)">Chemistry (50)</button>
+          <button class="subj-tab-btn" onclick="App.switchSubjectTab('Botany')" title="Botany Section (Q101–150)">Botany (50)</button>
+          <button class="subj-tab-btn" onclick="App.switchSubjectTab('Zoology')" title="Zoology Section (Q151–200)">Zoology (50)</button>
+        </div>
+        <div class="section-badge-bar" id="cbtSectionIndicator" title="NTA Section Structure">
+          <span id="cbtSectionLabel">Section A · Mandatory (Q1–Q35)</span>
+          <span id="cbtSectionProgress">35 Qs</span>
+        </div>
+      </div>
+
+      <div class="progressline" title="Exam Progress"><span id="progress"></span></div>
+      <div class="cbt-layout">
+        <div id="questionArea"></div>
+        <aside id="cbtPaletteWrap" class="cbt-palette-card" style="display:none">
+          <div class="eyebrow" title="Question Palette">NTA Question Palette</div>
+          <div class="palette-legend">
+            <span title="Answered"><i class="dot answered"></i>Answered</span>
+            <span title="Marked for Review"><i class="dot review"></i>Review</span>
+            <span title="Visited / Skipped"><i class="dot visited"></i>Skipped</span>
+          </div>
+          <div id="cbtPalette" class="cbt-palette"></div>
+          <button class="primary" style="width:100%;margin-top:16px" onclick="App.confirmFinishSession()" title="Submit Examination">Submit Full Paper</button>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 5. STREAMER VIEW -->
+    <section id="streamerView" style="display:none">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">Public Dataset Background Ingestion</div>
+          <h1>Mass Question Vault Streamer</h1>
+        </div>
+      </header>
+
+      <div class="card streamer-card">
+        <p style="color:var(--muted);line-height:1.5">Stream thousands of real medical and science MCQs directly into your local IndexedDB from public benchmark datasets (MedMCQA & SciQ).</p>
+        <div class="streamer-status-box">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-weight:700">IndexedDB Local Database</span>
+            <span id="streamerDbCount" style="font:700 14px 'JetBrains Mono',monospace;color:var(--teal)">Loading...</span>
+          </div>
+          <div class="bar" style="margin-bottom:12px"><div class="bar-fill" id="streamerProgressBar" style="width:0%"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+            <span id="streamerSpinner" style="display:none;color:var(--teal);font-weight:600">● Streaming active...</span>
+            <span id="streamerBatchCounter">0 Qs in session</span>
+          </div>
+          <div class="streamer-log" id="streamerLog">
+            [Streamer ready]: Click any button below to download hundreds or thousands of questions into your local IndexedDB.
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="primary" onclick="App.startMassStreaming(500)">+ Stream 500 Qs</button>
+          <button class="primary" style="background:#0b5650" onclick="App.startMassStreaming(2000)">+ Stream 2,000 Qs</button>
+          <button class="primary" style="background:var(--purple)" onclick="App.startMassStreaming(10000)">⚡ Stream 10,000 Qs</button>
+          <button class="secondary" id="stopStreamBtn" style="display:none;border-color:var(--red);color:var(--red)" onclick="App.stopMassStreaming()">Stop Streamer</button>
+        </div>
+
+        <div class="card" style="margin-top: 18px; background: #fdfefe; border: 1px solid #0d9488;">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+            <h3 style="color: #0f766e; margin:0;">📥 Offline Master Vault Ingestion (5.64 Lakh Questions · 81 Chapters)</h3>
+            <span class="tag" style="background:#ccfbf1;color:#0f766e;">Zero-CORS · 100% Offline</span>
+          </div>
+          <p style="color: var(--muted); font-size: 13px; line-height: 1.5; margin-bottom: 14px;">
+            Cache all 564,000 verified NCERT master questions (69 chapters &times; 8,000 questions each) into your browser's local IndexedDB. Once cached, every single question is permanently stored and queryable without any internet connection.
+          </p>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="primary" style="background:#0d9488;" onclick="App.ingestAllMasterShards()" title="Ingest All Shards">
+              📥 Ingest All 564,000 Master Questions into IndexedDB
+            </button>
+            <button class="secondary" onclick="App.startInfiniteDrill('ALL', 30)" title="Start Infinite Drill">
+              ⚡ Start 30-Question Infinite AI Drill
+            </button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 18px; background: #faf5ff; border: 1px solid #7c3aed;">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+            <h3 style="color: #7c3aed; margin:0;">⚡ 10 Lakh Questions Engine (Hard-Topic Prioritized)</h3>
+            <span class="tag" style="background:#f3e8ff;color:#7c3aed;">60% Hard · 30% Med · 10% Easy</span>
+          </div>
+          <p style="color: var(--muted); font-size: 13px; line-height: 1.5; margin-bottom: 14px;">
+            Synthesize and permanently stream up to 1,000,000 hard-topic questions directly into your local IndexedDB using deterministic NCERT mathematical models. Memory-safe stream with zero browser freezing.
+          </p>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="primary" style="background:#7c3aed;" onclick="App.scaleVaultTo10Lakh(50000)" title="Scale to 50k Qs">
+              ⚡ Scale Vault to 50,000 Hard Qs
+            </button>
+            <button class="primary" style="background:#6d28d9;" onclick="App.scaleVaultTo10Lakh(200000)" title="Scale to 2 Lakh Qs">
+              ⚡ Scale Vault to 2 Lakh Qs
+            </button>
+            <button class="primary" style="background:#4c1d95;" onclick="App.scaleVaultTo10Lakh(1000000)" title="Scale to 10 Lakh Qs">
+              ⚡ Scale Vault to 10 Lakh Questions Engine
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. BOOKMARKS VIEW -->
+    <section id="bookmarksView" class="setup" style="display:none">
+      <div class="breadcrumb"><span class="crumb-link" onclick="App.showView('dashboard')">Home</span> / <span>Saved Questions</span></div>
+      <div class="practice-top">
+        <button class="back-btn" onclick="App.showView('dashboard')"><i>←</i> Back to Home</button>
+        <div><div class="eyebrow">Saved for Revision</div><h1>Bookmarked Questions</h1></div>
+      </div>
+      <div class="setup-card" style="max-width:940px"><div id="bookmarkList"></div></div>
+    </section>
+
+    <!-- 7. MISTAKES VIEW -->
+    <section id="mistakesView" class="setup" style="display:none">
+      <div class="breadcrumb"><span class="crumb-link" onclick="App.showView('dashboard')">Home</span> / <span>My Mistakes</span></div>
+      <div class="practice-top">
+        <button class="back-btn" onclick="App.showView('dashboard')"><i>←</i> Back to Home</button>
+        <div><div class="eyebrow">Negative Mark Bleed Audit</div><h1>My Mistakes Vault (Review & Fix)</h1></div>
+      </div>
+      <div class="setup-card" style="max-width:940px"><div id="mistakeList"></div></div>
+    </section>
+
+    <!-- COMPREHENSIVE IN-DETAILED GROWTH BOARD -->
+    <section id="growthBoardView" style="display:none">
+      <div class="breadcrumb"><span class="crumb-link" onclick="App.showView('dashboard')">Home</span> / <span>Growth Board</span></div>
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <button class="back-btn" onclick="App.showView('dashboard')"><i>←</i> Back to Home</button>
+          <div>
+            <div class="eyebrow">End-to-End Performance Tracking</div>
+            <h1>Growth Board & Analytics</h1>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="secondary" onclick="App.showGrowthBoard()">↻ Refresh Board</button>
+          <button class="primary" style="background:#7c3aed;" onclick="App.openTimedEndlessSetup()">⏱ Timed Marathon →</button>
+        </div>
+      </header>
+
+      <div class="gb-container">
+        <!-- 1. Top KPI Summary Tiles -->
+        <div class="gb-kpi-grid">
+          <div class="gb-kpi-card" title="Total questions completed across all modes">
+            <span class="tag">Total Attempted</span>
+            <div class="gb-kpi-val" id="gbTotalAttempted">0</div>
+            <div style="font-size:12px;color:var(--muted);display:flex;justify-content:space-between">
+              <span>Today: <b id="gbTodayCount" style="color:var(--teal)">0</b></span>
+              <span>This Week: <b id="gbWeekCount" style="color:var(--teal)">0</b></span>
+            </div>
+          </div>
+
+          <div class="gb-kpi-card" title="Overall percentage of correct answers">
+            <span class="tag" style="background:#dcfce7;color:var(--emerald);">Overall Accuracy</span>
+            <div class="gb-kpi-val" id="gbOverallAccuracy" style="color:var(--emerald)">—</div>
+            <div style="font-size:12px;color:var(--muted)">
+              <span>Correct: <b id="gbCorrectCount" style="color:var(--emerald)">0</b></span> · 
+              <span>Wrong: <b id="gbWrongCount" style="color:var(--red)">0</b></span>
+            </div>
+          </div>
+
+          <div class="gb-kpi-card" title="Official NEET score calculated as +4 for correct, -1 for wrong">
+            <span class="tag" style="background:#e0f2fe;color:#0284c7;">Cumulative Net Score</span>
+            <div class="gb-kpi-val" id="gbNetScore" style="color:#0284c7">0 pts</div>
+            <small style="color:var(--muted)">Official NTA Scale (+4 / -1)</small>
+          </div>
+
+          <div class="gb-kpi-card" title="Average seconds spent per question">
+            <span class="tag" style="background:#fef3c7;color:#b45309;">Average Pacing</span>
+            <div class="gb-kpi-val" id="gbAvgTime" style="color:#b45309">— s/Q</div>
+            <small style="color:var(--muted)">Target: &lt;60s across all subjects</small>
+          </div>
+
+          <div class="gb-kpi-card" title="Total marks lost due to incorrect answers">
+            <span class="tag" style="background:#fee2e2;color:var(--red);">Negative Bleed</span>
+            <div class="gb-kpi-val" id="gbNegBleed" style="color:var(--red)">0 marks</div>
+            <small style="color:var(--muted)">Lost to avoidable mistakes</small>
+          </div>
+
+          <div class="gb-kpi-card" title="Predicted All-India Rank based on NEET 2024 percentiles">
+            <span class="tag" style="background:#f3e8ff;color:var(--purple);">Projected Score & AIR</span>
+            <div class="gb-kpi-val" id="gbProjectedAir" style="font-size:22px;color:var(--purple)">Calibrating...</div>
+            <small style="color:var(--muted)" id="gbCollegeBand">Requires 20+ questions</small>
+          </div>
+        </div>
+
+        <!-- 2. Subject-by-Subject Pacing & Mastery Gauges -->
+        <div class="card" style="margin-bottom:24px;">
+          <h3 style="margin-bottom:14px;font:700 18px 'Space Grotesk'">Subject Mastery & Pace Breakdown</h3>
+          <div class="gb-paces-grid" id="gbSubjectPaces">
+            <!-- Dynamic Subject Cards -->
+          </div>
+        </div>
+
+        <!-- 3. Cognitive Speed vs Accuracy Matrix -->
+        <div class="card" style="margin-bottom:24px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+            <div>
+              <h3 style="margin:0;font:700 18px 'Space Grotesk'">4-Quadrant Cognitive Radar</h3>
+              <p style="color:var(--muted);font-size:13px">Speed vs. Accuracy correlation to detect rushed mistakes and slow calculations.</p>
+            </div>
+          </div>
+          <div class="quadrant-grid" id="gbQuadrantMatrix"></div>
+        </div>
+
+        <!-- 4. End-to-End 81 Chapters Curriculum Mastery Radar -->
+        <div class="card" style="margin-bottom:24px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+            <div>
+              <h3 style="margin:0;font:700 18px 'Space Grotesk'">End-to-End Chapter Mastery Matrix (81 Chapters)</h3>
+              <p style="color:var(--muted);font-size:13px">Track individual progress, accuracy, marks bled, and mastery status for all 69 NEET chapters.</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <div class="class-pills" id="gbSubjectFilterPills">
+                <button class="pill active" onclick="App.filterGbChapters('ALL')">All (81)</button>
+                <button class="pill" onclick="App.filterGbChapters('Physics')">Physics (24)</button>
+                <button class="pill" onclick="App.filterGbChapters('Chemistry')">Chemistry (22)</button>
+                <button class="pill" onclick="App.filterGbChapters('Botany')">Botany (20)</button>
+                <button class="pill" onclick="App.filterGbChapters('Zoology')">Zoology (15)</button>
+              </div>
+              <input type="text" id="gbChapterSearch" placeholder="🔍 Search chapter..." oninput="App.onGbSearch(this.value)" style="padding:6px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;width:180px;">
+            </div>
+          </div>
+
+          <div class="gb-chapters-table-wrap">
+            <table class="gb-chapters-table">
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Chapter Name</th>
+                  <th>Attempted</th>
+                  <th>Accuracy</th>
+                  <th>Marks Bleed</th>
+                  <th>Mastery Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="gbChaptersTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 5. Mistake Root-Cause Diagnostics -->
+        <div class="card" style="margin-bottom:24px;">
+          <h3 style="margin-bottom:12px;font:700 18px 'Space Grotesk'">Error Root-Cause Diagnostics</h3>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:14px">Audit where your negative marks are bleeding by error category.</p>
+          <div id="gbMistakeDiagnostics" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;"></div>
+        </div>
+
+        <!-- 6. Practice Sessions Timeline -->
+        <div class="card">
+          <h3 style="margin-bottom:12px;font:700 18px 'Space Grotesk'">Complete Practice Sessions Timeline</h3>
+          <div id="gbSessionsTimeline"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. PROGRESS VIEW -->
+    <section id="progressView" class="setup" style="display:none">
+      <div class="breadcrumb"><span class="crumb-link" onclick="App.showView('dashboard')">Home</span> / <span>Speed Matrix</span></div>
+      <div class="practice-top">
+        <button class="back-btn" onclick="App.showView('dashboard')"><i>←</i> Back to Home</button>
+        <div><div class="eyebrow">Speed vs. Accuracy Diagnostics</div><h1>Speed Matrix & Cognitive Radar</h1></div>
+      </div>
+      <div class="setup-card" style="max-width:980px">
+        <div class="quadrant-grid" id="quadrantMatrix"></div>
+        <h3 style="margin:24px 0 12px">Subtopic Weakness Radar (Marks Bleed)</h3>
+        <div id="weakSubtopics"></div>
+        <div id="history" style="margin-top:26px"></div>
+      </div>
+    </section>
+
+    <!-- 9. DATA INTEGRITY & DIAGNOSTICS VIEW -->
+    <section id="diagnosticsView" style="display:none">
+      <div class="breadcrumb"><span class="crumb-link" onclick="App.showView('dashboard')">Home</span> / <span>System Diagnostics</span></div>
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <button class="back-btn" onclick="App.showView('dashboard')"><i>←</i> Back to Home</button>
+          <div>
+            <div class="eyebrow">Database Health & Question Verification</div>
+            <h1>Data Diagnostics & Storage Status</h1>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="secondary" onclick="App.runIntegrityCheck()">▶ Verify All Records</button>
+          <button class="primary" onclick="App.forceResetDatabase()">↻ Reset & Re-sync Bank</button>
+        </div>
+      </header>
+
+      <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-bottom: 24px;">
+        <div class="card">
+          <span class="tag">IndexedDB Storage</span>
+          <h2 id="diagTotalCount" style="margin: 8px 0; font-size: 32px; font-weight:700;">—</h2>
+          <p style="color:var(--muted); font-size: 13px;">Verified questions stored locally on your device's persistent disk.</p>
+        </div>
+        <div class="card">
+          <span class="tag" style="background:#dcfce7;color:var(--emerald);">Integrity Status</span>
+          <h2 id="diagIntegrityStatus" style="margin: 8px 0; font-size: 32px; font-weight:700; color:var(--emerald);">100% Valid</h2>
+          <p style="color:var(--muted); font-size: 13px;">0 malformed questions, 0 missing options, 0 null references.</p>
+        </div>
+        <div class="card">
+          <span class="tag" style="background:#e0f2fe;color:#0284c7;">Storage Protocol</span>
+          <h2 style="margin: 8px 0; font-size: 32px; font-weight:700; color:#0284c7;">CORS & Offline Immune</h2>
+          <p style="color:var(--muted); font-size: 13px;">Runs flawlessly on both <code>file:///</code> and <code>http://localhost</code>.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 24px;">
+        <h3 style="margin-bottom: 16px;">Curriculum & Subject Distribution</h3>
+        <div id="diagSubjectBreakdown" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom: 12px;">Database Maintenance & Actions</h3>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <button class="secondary" onclick="App.exportDatabaseJSON()">💾 Export Complete Question Bank (.json)</button>
+          <label class="secondary" style="cursor:pointer;" for="diagImportInput">📥 Import External JSON Shards<input type="file" id="diagImportInput" accept=".json" multiple style="display:none" onchange="App.importFiles(this.files)"></label>
+          <button class="secondary" style="border-color:var(--red);color:var(--red)" onclick="App.clearAttemptsHistory()">🗑 Reset Practice History & Mistakes</button>
+        </div>
+        <div id="diagConsoleLog" style="margin-top:16px; font-family:'JetBrains Mono',monospace; font-size:12px; background:var(--paper); padding:14px; border-radius:8px; border:1px solid var(--line); max-height:200px; overflow-y:auto;">
+          System: IndexedDB question bank initialized and ready for instant subtopic drills.
+        </div>
+      </div>
+    </section>
+
+
+    <!-- TIMED MARATHON SUMMARY MODAL -->
+    <div id="timedEndlessSummaryModal" class="modal-overlay" style="display:none">
+      <div class="modal-card" style="max-width: 680px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;border-bottom: 2px solid var(--line);padding-bottom:12px;">
+          <div>
+            <div class="eyebrow" style="color:var(--purple);font-weight:700;">MARATHON COMPLETED</div>
+            <h2 id="teModalTitle" style="font:700 22px 'Space Grotesk';margin:0">Timed Practice Scorecard</h2>
+          </div>
+          <button class="back" onclick="App.closeTeSummaryModal()">✕</button>
+        </div>
+
+        <div id="teModalBody">
+          <!-- Dynamically populated stats -->
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:20px;border-top:1px solid var(--line);padding-top:14px;flex-wrap:wrap;">
+          <button class="secondary" onclick="App.closeTeSummaryModal(); App.showMistakes();">Review Mistakes Vault</button>
+          <button class="secondary" onclick="App.closeTeSummaryModal(); App.showGrowthBoard();">Inspect Growth Board 📈</button>
+          <button class="primary" style="background:#7c3aed" onclick="App.closeTeSummaryModal(); App.openTimedEndlessSetup();">Start Another Marathon ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10. CUSTOM MOCK MODAL -->
+    <div id="customMockModal" class="modal-overlay" style="display:none">
+      <div class="modal-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+          <div>
+            <div class="eyebrow">Exam Simulator Configurator</div>
+            <h2 style="font:700 22px 'Space Grotesk'">Build Custom Mock Exam</h2>
+          </div>
+          <button class="back" onclick="App.closeCustomMockModal()">✕</button>
+        </div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="cmSyllabus">Syllabus Scope</label>
+            <select id="cmSyllabus">
+              <option value="FULL" selected>Full Syllabus (Class 11 + Class 12 NEET)</option>
+              <option value="11">Class 11 Complete Syllabus</option>
+              <option value="12">Class 12 Complete Syllabus</option>
+              <option value="PC">Physics & Chemistry Only (100 Qs)</option>
+              <option value="BIO">Complete Biology Only (100 Qs Botany + Zoology)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="cmCount">Number of Questions</label>
+            <select id="cmCount">
+              <option value="200" selected>200 Questions (Official NTA 2024 Format)</option>
+              <option value="180">180 Questions (Classic NEET Format)</option>
+              <option value="100">100 Questions (Half-Length Simulation)</option>
+              <option value="50">50 Questions (Quick Power Sprint)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="cmTimer">Practice Time / Timer</label>
+            <select id="cmTimer">
+              <option value="200" selected>200 Minutes (3 hrs 20 mins — Official NTA)</option>
+              <option value="180">180 Minutes (3 hrs)</option>
+              <option value="90">90 Minutes (Speed Test)</option>
+              <option value="50">50 Minutes (Sprint)</option>
+              <option value="0">Untimed / Self-Paced Practice</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="cmDiff">Question Difficulty Profile</label>
+            <select id="cmDiff">
+              <option value="mixed" selected>Standard NTA Balance (Easy 30%, Med 50%, Hard 20%)</option>
+              <option value="hard">High Challenger (AIIMS Level)</option>
+              <option value="easy">Foundational NCERT Confidence</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:24px;justify-content:flex-end">
+          <button class="secondary" onclick="App.closeCustomMockModal()">Cancel</button>
+          <button class="primary" onclick="App.launchCustomMockFromModal()">⚡ Generate & Start Exam</button>
+        </div>
+      </div>
+    </div>
+
+  
+    <!-- NTA OFFICIAL EXAMINATION INSTRUCTIONS MODAL -->
+    <div id="ntaInstructionsModal" class="modal-overlay" style="display:none">
+      <div class="modal-card" style="max-width: 780px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;border-bottom: 2px solid var(--border);padding-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="background:#0284c7;color:#fff;font-weight:800;border-radius:8px;padding:6px 12px;font-size:16px;">NTA</div>
+            <div>
+              <div class="eyebrow" style="color:#0284c7;font-weight:700;">NATIONAL TESTING AGENCY · NEET (UG) CBT PORTAL</div>
+              <h2 id="ntaModalExamTitle" style="font:700 20px 'Space Grotesk';margin:0">Official Candidate Instructions</h2>
+            </div>
+          </div>
+          <button class="back" onclick="App.closeNtaInstructions()">✕</button>
+        </div>
+
+        <div style="max-height: 60vh; overflow-y: auto; padding-right: 8px; font-size: 13.5px; line-height: 1.6; color: var(--text);">
+          <div style="display:grid;grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));gap:10px;margin-bottom:16px;background:var(--subtle);padding:12px;border-radius:10px;">
+            <div><small style="color:var(--muted)">Total Questions</small><div style="font-weight:700;font-size:15px;">200 (180 to attempt)</div></div>
+            <div><small style="color:var(--muted)">Total Duration</small><div style="font-weight:700;font-size:15px;">200 Minutes (03:20:00)</div></div>
+            <div><small style="color:var(--muted)">Maximum Marks</small><div style="font-weight:700;font-size:15px;">720 Marks</div></div>
+            <div><small style="color:var(--muted)">Marking Scheme</small><div style="font-weight:700;font-size:15px;color:var(--emerald)">+4 / -1 / 0</div></div>
+          </div>
+
+          <h4 style="margin: 12px 0 6px 0; font-size:15px; font-weight:700; color:var(--dark);">1. Structure of Question Paper</h4>
+          <p>The Question Paper comprises four subjects: <b>Physics, Chemistry, Botany, and Zoology</b>. Each subject contains two sections:</p>
+          <ul style="padding-left: 20px; margin: 6px 0 12px 0;">
+            <li><b>Section A (Questions 1 to 35):</b> All 35 questions are compulsory (+4 for correct, -1 for incorrect).</li>
+            <li><b>Section B (Questions 36 to 50):</b> Contains 15 questions. Candidates may attempt <b>any 10 questions</b>. If more than 10 questions are attempted, only the first 10 attempted questions will be evaluated according to official NTA regulations.</li>
+          </ul>
+
+          <h4 style="margin: 12px 0 6px 0; font-size:15px; font-weight:700; color:var(--dark);">2. Navigation & Palette Status Guide</h4>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:8px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:8px;"><span style="background:#e2e8f0;border:1px solid #cbd5e1;display:inline-block;width:14px;height:14px;border-radius:3px;"></span> Not Visited</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="background:#ef4444;display:inline-block;width:14px;height:14px;border-radius:3px;"></span> Visited & Unanswered</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="background:#10b981;display:inline-block;width:14px;height:14px;border-radius:3px;"></span> Answered & Saved</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="background:#8b5cf6;display:inline-block;width:14px;height:14px;border-radius:3px;"></span> Marked for Review</div>
+          </div>
+
+          <h4 style="margin: 12px 0 6px 0; font-size:15px; font-weight:700; color:var(--dark);">3. Pacing & Time Allocation Strategy</h4>
+          <p style="color:var(--muted);margin-bottom:12px;">To complete 180 questions comfortably and leave 15 minutes for final review, target: <b>Botany & Zoology:</b> 45-50 sec/Q · <b>Chemistry:</b> 60-70 sec/Q · <b>Physics:</b> 80-90 sec/Q.</p>
+
+          <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px;display:flex;align-items:flex-start;gap:10px;">
+            <input type="checkbox" id="ntaAgreeCheckbox" onchange="App.toggleNtaBeginButton()" style="margin-top:3px;transform:scale(1.2);cursor:pointer;">
+            <label for="ntaAgreeCheckbox" style="font-size:13px;line-height:1.45;cursor:pointer;">
+              I have read and understood all the instructions given above. I ensure that my computer system is operational and I agree to strictly abide by the rules of the NEET-UG CBT Examination.
+            </label>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:20px;border-top:1px solid var(--border);padding-top:14px;">
+          <button class="secondary" onclick="App.closeNtaInstructions()">Cancel & Return</button>
+          <button id="ntaBeginExamBtn" class="primary" onclick="App.confirmAndLaunchFullMock()" disabled style="opacity:0.5;cursor:not-allowed;">I Am Ready to Begin ▶</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Mobile Quick Navigation Bar -->
+<nav class="mobile-bottom-nav">
+  <button class="mobile-nav-btn active" data-view="dashboard" onclick="App.showView('dashboard')"><i>🏠</i>Home</button>
+  <button class="mobile-nav-btn" data-view="timedEndlessSetup" onclick="App.openTimedEndlessSetup()"><i>⏱️</i>Marathon</button>
+  <button class="mobile-nav-btn" data-view="mocksHubView" onclick="App.showMocksHub()"><i>📝</i>Mocks</button>
+  <button class="mobile-nav-btn" data-view="growthBoardView" onclick="App.showGrowthBoard()"><i>📈</i>Growth</button>
+  <button class="mobile-nav-btn" data-view="mistakesView" onclick="App.showMistakes()"><i>❌</i>Mistakes</button>
+</nav>
+
+<!-- Modularized Application Scripts -->
+<script src="js/db.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/mocks.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

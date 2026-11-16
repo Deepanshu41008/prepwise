@@ -1,0 +1,22 @@
+# Environment & OS files
+.DS_Store
+Thumbs.db
+*.log
+__pycache__/
+*.pyc
+
+# Personal files
+ticket.pdf
+
+# Redundant mirror folder (production uses root index.html)
+prepwise/
+
+# Unused raw intermediate JSON dump (app uses seed_pack.js & data/chapters/)
+data/seed_questions.json
+
+# Redundant JSON chapter shards (app uses data/chapters/*.js zero-CORS shards)
+data/chapters/*.json
+
+# Scratch generation scripts
+scratch/
+
