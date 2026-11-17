@@ -569,7 +569,7 @@ h1, h2, h3, p { margin: 0; }
 }
 
 @media(max-width: 900px) {
-  .app { flex-direction: column; padding-bottom: 70px; }
+  .app { flex-direction: column; padding-bottom: 80px; }
   .sidebar {
     width: 100%;
     min-width: 0;
@@ -590,8 +590,9 @@ h1, h2, h3, p { margin: 0; }
     gap: 6px;
     padding-bottom: 6px;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
+    scrollbar-width: none;
   }
+  .nav::-webkit-scrollbar { display: none; }
   .nav button {
     font-size: 13px !important;
     white-space: nowrap;
@@ -601,10 +602,38 @@ h1, h2, h3, p { margin: 0; }
   .nav i { font-size: 15px; margin-right: 6px; }
   .nav-section-label { display: none; }
   .side-bottom { display: none; }
-  .main { padding: 18px 14px; }
+  .main { padding: 14px 12px 90px; }
   .grid, .cbt-layout, .form-grid, .quadrant-grid { grid-template-columns: 1fr; }
   .cbt-palette-card { width: 100%; position: static; }
   .mobile-bottom-nav { display: flex; }
+
+  /* Mobile Chapter Hub & Cards */
+  .syllabus-controls-bar { padding: 12px; border-radius: 12px; }
+  .filter-controls-row { flex-direction: column; gap: 8px; }
+  .filter-group { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .topics { grid-template-columns: 1fr; gap: 12px; }
+  .topic { padding: 14px 16px; border-radius: 12px; }
+  .topic-title { font-size: 15.5px; }
+  .topic-card-actions { display: flex; gap: 8px; }
+  .primary-drill-btn { padding: 11px 14px; font-size: 13.5px; border-radius: 8px; }
+  .secondary-drill-btn { padding: 11px 12px; font-size: 12.5px; border-radius: 8px; }
+
+  /* Mobile Questions & Examination Hall */
+  .question-card { padding: 16px 14px; border-radius: 12px; }
+  .question { font-size: 16px; line-height: 1.55; }
+  .answers { gap: 10px; }
+  .answer {
+    padding: 13px 14px;
+    font-size: 14.5px;
+    min-height: 48px;
+    border-radius: 10px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .answer:active { transform: scale(0.98); }
+  .actions { flex-direction: column; gap: 8px; }
+  .actions button { width: 100%; min-height: 44px; font-size: 14px; justify-content: center; }
+  .hero-action-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
 }
 
 /* ==================== DETAILED 3-TIER SOLUTION CARDS ==================== */
@@ -1126,5 +1155,219 @@ button[title], select[title], input[title], a[title], .stat-pill[title], .card[t
   font-size: 18px;
   font-style: normal;
 }
+
+/* ==================== GLOBAL FAST LOADING OVERLAY ==================== */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.loading-box {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 26px 34px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 250px;
+  max-width: 90vw;
+}
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3.5px solid #e2e8f0;
+  border-top-color: var(--teal);
+  border-radius: 50%;
+  animation: spinLoader 0.65s linear infinite;
+}
+@keyframes spinLoader {
+  to { transform: rotate(360deg); }
+}
+
+/* ==================== UNIFIED SYLLABUS & CHAPTER HUB ==================== */
+.syllabus-hub {
+  margin-top: 34px;
+  margin-bottom: 24px;
+}
+.syllabus-hub-header {
+  margin-bottom: 16px;
+}
+.syllabus-controls-bar {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 4px 16px rgba(15,23,42,0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.syllabus-controls-bar .search-wrap {
+  width: 100%;
+}
+.syllabus-controls-bar .search-bar {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  font-size: 14px;
+  color: var(--ink);
+  transition: all .2s ease;
+}
+.syllabus-controls-bar .search-bar:focus {
+  outline: none;
+  border-color: var(--teal);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+.filter-controls-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.filter-group::-webkit-scrollbar { display: none; }
+.filter-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  white-space: nowrap;
+  min-width: 55px;
+}
+
+/* ==================== REDESIGNED CHAPTER CARDS ==================== */
+.topics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 16px;
+}
+.topic {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  transition: all .2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.topic:hover {
+  border-color: var(--teal);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.08);
+}
+.topic-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.topic-subj-pill {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.topic-class-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.topic-count-tag {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.topic-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.35;
+  margin: 0 0 8px 0;
+}
+.topic-subtopics-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.topic-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.primary-drill-btn {
+  flex: 1;
+  background: var(--teal);
+  color: var(--white);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  text-align: center;
+  transition: all .15s ease;
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.primary-drill-btn:hover {
+  background: var(--teal-dark);
+  transform: translateY(-1px);
+}
+.secondary-drill-btn {
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  font-weight: 600;
+  font-size: 12.5px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.secondary-drill-btn:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
 
 

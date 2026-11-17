@@ -57,6 +57,18 @@ Object.assign(window.App, {
     await this.updateMockKpis();
   },
 
+  showLoading(msg = 'Preparing Questions... 🎯') {
+    const el = document.getElementById('appLoadingOverlay');
+    const msgEl = document.getElementById('loadingOverlayMsg');
+    if (msgEl) msgEl.textContent = msg;
+    if (el) el.style.display = 'flex';
+  },
+
+  hideLoading() {
+    const el = document.getElementById('appLoadingOverlay');
+    if (el) el.style.display = 'none';
+  },
+
   onSearchInput(val) {
     this.dashSearchQuery = val.trim().toLowerCase();
     this.renderDashboard();
@@ -102,7 +114,7 @@ Object.assign(window.App, {
             if (!matchedSt) continue;
           }
 
-          const chips = Object.entries(meta.subtopics || {}).slice(0, 5).map(([st, cnt]) => `
+          const chips = Object.entries(meta.subtopics || {}).slice(0, 4).map(([st, cnt]) => `
             <span class="subtopic-chip" data-chap="${encodeURIComponent(chap)}" data-st="${encodeURIComponent(st)}" onclick="event.stopPropagation();App.onChipClick(this)" title="Practice ${st}">
               ${st}
             </span>
@@ -111,19 +123,25 @@ Object.assign(window.App, {
           const tagClass = subj === 'Physics' ? 'tag-physics' : (subj === 'Chemistry' ? 'tag-chemistry' : (subj === 'Botany' ? 'tag-botany' : 'tag-zoology'));
           const sIcon = subjIcons[subj] || '';
           const qCount = meta.count || (Object.keys(meta.subtopics || {}).length * 800);
+          const safeSubj = subj.replace(/'/g, "\\'");
+          const safeChap = chap.replace(/'/g, "\\'");
 
           cards.push(`
-            <div class="topic" data-cls="${cls}" data-subj="${encodeURIComponent(subj)}" data-chap="${encodeURIComponent(chap)}" onclick="App.onTopicCardClick(this)">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                <span class="tag ${tagClass}">${sIcon} Class ${cls} · ${subj}</span>
-                <span style="font-size:11px;font-weight:700;color:var(--muted);">${qCount.toLocaleString()} Qs</span>
+            <div class="topic" data-cls="${cls}" data-subj="${encodeURIComponent(subj)}" data-chap="${encodeURIComponent(chap)}">
+              <div class="topic-header-row">
+                <span class="topic-subj-pill ${tagClass}">${sIcon} ${subj}</span>
+                <span class="topic-class-tag">Class ${cls}</span>
+                <span class="topic-count-tag">${qCount.toLocaleString()} Qs</span>
               </div>
-              <b style="font-size:15px;line-height:1.35;display:block;margin-bottom:4px;">${chap}</b>
-              <small style="display:block;margin-bottom:10px;color:var(--muted);">${Object.keys(meta.subtopics || {}).length} Micro-Concepts</small>
-              <div class="subtopic-chips">${chips}</div>
-              <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:10px;">
-                <span style="font-size:11.5px;color:var(--muted);font-weight:600;">NCERT + PYQs</span>
-                <button class="topic-drill-btn" onclick="event.stopPropagation();App.onTopicCardClick(this.closest('.topic'))">▶ Practice Chapter</button>
+              <h3 class="topic-title">${chap}</h3>
+              <div class="topic-subtopics-preview">${chips}</div>
+              <div class="topic-card-actions">
+                <button class="topic-drill-btn primary-drill-btn" onclick="event.stopPropagation();App.startInstantChapterPractice('${safeChap}')" title="Instantly start 15 questions from ${safeChap}">
+                  ▶ Start Practice (15 Qs)
+                </button>
+                <button class="secondary-drill-btn" onclick="event.stopPropagation();App.openSetup('${cls}','${safeSubj}','${safeChap}')" title="Configure custom drill with difficulty & question count">
+                  ⚙️ Custom
+                </button>
               </div>
             </div>
           `);
@@ -135,7 +153,7 @@ Object.assign(window.App, {
     if (topicContainer) {
       topicContainer.innerHTML = cards.length ? cards.join('') : `
         <div class="empty" style="grid-column:1/-1">
-          No chapters matched "${query}". Click "⚡ Full Mocks Hub" or "Data Diagnostics" to inspect questions.
+          No chapters matched "${query}". Try searching another keyword or clear filters.
         </div>
       `;
     }
@@ -146,10 +164,8 @@ Object.assign(window.App, {
   setSubjFilter(s) { this.dashSubjFilter = s; this.renderDashboard(); },
 
   onTopicCardClick(el) {
-    const cls = el.dataset.cls;
-    const subj = decodeURIComponent(el.dataset.subj);
     const chap = decodeURIComponent(el.dataset.chap);
-    this.openSetup(cls, subj, chap);
+    this.startInstantChapterPractice(chap);
   },
 
   onChipClick(el) {
@@ -257,60 +273,183 @@ Object.assign(window.App, {
     }
   },
 
-  async quickSubtopicDrill(chap, subtopic) {
-    await this.ensureReady();
-    await this.ensureChapterLoaded(chap);
-    let pool = await db.questions.where('[chapter+subtopic]').equals([chap, subtopic]).limit(30).toArray();
-    if (!pool.length) {
-      pool = await db.questions.where('chapter').equals(chap).limit(30).toArray();
+  async startInstantChapterPractice(chapName, count = 15) {
+    this.showLoading(`Loading ${chapName} (15 Qs)... 🎯`);
+    try {
+      let pool = [];
+
+      // 1. Instant response: query in-memory seed questions (< 5ms response!)
+      if (window.PREPWISE_SEED_QUESTIONS && window.PREPWISE_SEED_QUESTIONS.length) {
+        pool = window.PREPWISE_SEED_QUESTIONS.filter(q => q.chapter.toLowerCase() === chapName.toLowerCase());
+      }
+
+      if (pool.length >= count) {
+        this.hideLoading();
+        const selected = this.shuffle(pool).slice(0, count);
+        this.beginSession(selected, `${chapName} Practice (15 Qs)`, false, false);
+        return;
+      }
+
+      // 2. Query IndexedDB
+      try {
+        const dbPool = await db.questions.where('chapter').equals(chapName).limit(count * 2).toArray();
+        if (dbPool.length >= count) {
+          this.hideLoading();
+          const selected = this.shuffle(dbPool).slice(0, count);
+          this.beginSession(selected, `${chapName} Practice (15 Qs)`, false, false);
+          return;
+        }
+      } catch (dbErr) {
+        console.warn('DB query notice:', dbErr);
+      }
+
+      // 3. Dynamic shard fetch
+      const file = this.findChapterFile(chapName);
+      if (file) {
+        await this.loadChapterShard(file);
+        const freshPool = await db.questions.where('chapter').equals(chapName).limit(count * 2).toArray();
+        if (freshPool.length > 0) {
+          this.hideLoading();
+          const selected = this.shuffle(freshPool).slice(0, count);
+          this.beginSession(selected, `${chapName} Practice (15 Qs)`, false, false);
+          return;
+        }
+      }
+
+      // 4. In-memory fallback
+      if (pool.length > 0) {
+        this.hideLoading();
+        this.beginSession(this.shuffle(pool), `${chapName} Practice`, false, false);
+        return;
+      }
+
+      // 5. Generic pool fallback
+      const sample = await db.questions.limit(count).toArray();
+      this.hideLoading();
+      if (sample.length > 0) {
+        this.beginSession(this.shuffle(sample), `${chapName} Practice`, false, false);
+      } else {
+        alert(`Questions for "${chapName}" are loading. Please try again in a moment.`);
+      }
+    } catch (err) {
+      this.hideLoading();
+      console.error('startInstantChapterPractice error:', err);
+      alert('Could not start practice drill. Please try again.');
     }
-    if (!pool.length) return alert('No questions found for this selection.');
-    this.beginSession(this.shuffle(pool).slice(0, 30), `${chap} · ${subtopic}`, false, false);
+  },
+
+  async quickSubtopicDrill(chap, subtopic) {
+    this.showLoading(`Loading ${subtopic}... 🎯`);
+    try {
+      let pool = [];
+      if (window.PREPWISE_SEED_QUESTIONS && window.PREPWISE_SEED_QUESTIONS.length) {
+        pool = window.PREPWISE_SEED_QUESTIONS.filter(q => 
+          q.chapter.toLowerCase() === chap.toLowerCase() && 
+          q.subtopic.toLowerCase() === subtopic.toLowerCase()
+        );
+      }
+
+      if (pool.length < 15) {
+        await this.ensureChapterLoaded(chap);
+        const dbPool = await db.questions.where('[chapter+subtopic]').equals([chap, subtopic]).limit(30).toArray();
+        pool = [...pool, ...dbPool];
+      }
+
+      this.hideLoading();
+      if (!pool.length) {
+        const fallback = (window.PREPWISE_SEED_QUESTIONS || []).filter(q => q.chapter.toLowerCase() === chap.toLowerCase());
+        if (fallback.length) {
+          return this.beginSession(this.shuffle(fallback).slice(0, 15), `${chap} Practice`, false, false);
+        }
+        return alert('No questions found for this micro-concept. Please choose another topic.');
+      }
+      this.beginSession(this.shuffle(pool).slice(0, 15), `${chap} · ${subtopic}`, false, false);
+    } catch (e) {
+      this.hideLoading();
+      console.error(e);
+      alert('Error loading subtopic. Please try again.');
+    }
   },
 
   async startSubtopicDrill() {
-    await this.ensureReady();
-    const cls = document.getElementById('classSelect').value;
-    const subj = document.getElementById('subjectSelect').value;
-    const chap = document.getElementById('topicSelect').value;
-    const st = document.getElementById('subtopicSelect').value;
-    const diff = document.querySelector('input[name=difficulty]:checked').value;
-    const status = document.getElementById('statusSelect').value;
-    const count = Number(document.getElementById('countSelect').value);
+    this.showLoading('Preparing your drill questions... 🎯');
+    try {
+      const cls = document.getElementById('classSelect').value;
+      const subj = document.getElementById('subjectSelect').value;
+      const chap = document.getElementById('topicSelect').value;
+      const st = document.getElementById('subtopicSelect').value;
+      const diff = document.querySelector('input[name=difficulty]:checked').value;
+      const status = document.getElementById('statusSelect').value;
+      const count = Number(document.getElementById('countSelect').value) || 15;
 
-    if (chap !== 'ALL') {
-      await this.ensureChapterLoaded(chap);
+      let pool = [];
+
+      // Fast in-memory filter first
+      if (window.PREPWISE_SEED_QUESTIONS && window.PREPWISE_SEED_QUESTIONS.length) {
+        pool = window.PREPWISE_SEED_QUESTIONS.filter(q => {
+          if (cls !== 'ALL' && String(q.classNum) !== String(cls)) return false;
+          if (subj !== 'ALL' && q.subject !== subj) return false;
+          if (chap !== 'ALL' && q.chapter.toLowerCase() !== chap.toLowerCase()) return false;
+          if (st !== 'ALL' && q.subtopic.toLowerCase() !== st.toLowerCase()) return false;
+          if (diff !== 'mixed' && q.difficulty !== diff) return false;
+          return true;
+        });
+      }
+
+      if (pool.length >= count) {
+        this.hideLoading();
+        const selected = this.shuffle(pool).slice(0, count);
+        const title = chap !== 'ALL' ? (st !== 'ALL' ? `${chap} · ${st}` : chap) : (subj !== 'ALL' ? `${subj} Practice` : 'Custom Drill');
+        this.beginSession(selected, title, false, false);
+        return;
+      }
+
+      // Query IndexedDB
+      if (chap !== 'ALL') {
+        await this.ensureChapterLoaded(chap);
+      }
+
+      let collection;
+      if (chap !== 'ALL' && st !== 'ALL') {
+        collection = db.questions.where('[chapter+subtopic]').equals([chap, st]);
+      } else if (subj !== 'ALL' && chap !== 'ALL') {
+        collection = db.questions.where('[subject+chapter]').equals([subj, chap]);
+      } else if (cls !== 'ALL' && subj !== 'ALL') {
+        collection = db.questions.where('[classNum+subject]').equals([String(cls), subj]);
+      } else if (subj !== 'ALL') {
+        collection = db.questions.where('subject').equals(subj);
+      } else {
+        collection = db.questions.toCollection();
+      }
+
+      if (diff !== 'mixed') {
+        collection = collection.filter(q => q.difficulty === diff);
+      }
+
+      let dbPool = await collection.limit(count * 3).toArray();
+      if (status === 'mistakes') {
+        const mIds = new Set((await db.mistakes.toArray()).map(m => m.questionId));
+        dbPool = dbPool.filter(q => mIds.has(q.id));
+      }
+
+      const merged = [...pool, ...dbPool];
+      const unique = new Map();
+      merged.forEach(q => unique.set(q.id, q));
+      const finalPool = [...unique.values()];
+
+      this.hideLoading();
+      if (!finalPool.length) {
+        return alert('No questions matched this exact filter. Try selecting "All Difficulties" or "All Subtopics".');
+      }
+
+      const selected = this.shuffle(finalPool).slice(0, count);
+      const title = chap !== 'ALL' ? (st !== 'ALL' ? `${chap} · ${st}` : chap) : (subj !== 'ALL' ? `${subj} Practice` : 'Custom Drill');
+      this.beginSession(selected, title, false, false);
+    } catch (e) {
+      this.hideLoading();
+      console.error('startSubtopicDrill error:', e);
+      alert('Could not start drill. Please try again.');
     }
-
-    let collection;
-    if (chap !== 'ALL' && st !== 'ALL') {
-      collection = db.questions.where('[chapter+subtopic]').equals([chap, st]);
-    } else if (subj !== 'ALL' && chap !== 'ALL') {
-      collection = db.questions.where('[subject+chapter]').equals([subj, chap]);
-    } else if (cls !== 'ALL' && subj !== 'ALL') {
-      collection = db.questions.where('[classNum+subject]').equals([String(cls), subj]);
-    } else if (subj !== 'ALL') {
-      collection = db.questions.where('subject').equals(subj);
-    } else {
-      collection = db.questions.toCollection();
-    }
-
-    if (diff !== 'mixed') {
-      collection = collection.filter(q => q.difficulty === diff);
-    }
-
-    let pool = await collection.limit(count * 2).toArray();
-
-    if (status === 'mistakes') {
-      const mIds = new Set((await db.mistakes.toArray()).map(m => m.questionId));
-      pool = pool.filter(q => mIds.has(q.id));
-    }
-
-    const selected = this.shuffle(pool).slice(0, count);
-    if (!selected.length) return alert('No questions matched this filter. Broaden your criteria or select All Difficulties.');
-
-    const title = chap !== 'ALL' ? (st !== 'ALL' ? `${chap} · ${st}` : chap) : (subj !== 'ALL' ? `${subj} Practice` : 'Comprehensive Drill');
-    this.beginSession(selected, title, false, false);
   },
 
   async startConfidenceMode() {

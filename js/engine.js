@@ -1173,7 +1173,7 @@ Object.assign(window.App, {
         const wrg3 = `$5'\\text{-CTGCAG-3'}$ (PstI)`;
         opts = this.shuffle([...new Set([cor, wrg1, wrg2, wrg3])]);
         correctIdx = opts.indexOf(cor);
-        principle = 'EcoRI cleaves between G and A within palindromic sequence $5'\\text{-GAATTC-3'}$, leaving single-stranded overhanging sticky ends.';
+        principle = `EcoRI cleaves between G and A within palindromic sequence $5'\\text{-GAATTC-3'}$, leaving single-stranded overhanging sticky ends.`;
         steps = `$$5'\\text{-G}\\downarrow\\text{AATTC-3'}$$<br>$$3'\\text{-CTTAA}\\uparrow\\text{G-5'}$$.`;
         traps = 'Option B is BamHI; Option C is HindIII.';
         hint = 'EcoRI cuts specifically at GAATTC.';
@@ -1275,7 +1275,9 @@ Object.assign(window.App, {
     for (let i = 0; i < count; i++) {
       questions.push(this.generateProceduralQuestion(subject));
     }
-    this.
+    this.beginSession(questions, `⚡ Infinite Practice Mode (${subject === 'ALL' ? 'Multi-Subject' : subject} · 60% Hard)`, false, false);
+  },
+
   // ==================== TIMED ENDLESS MARATHON ENGINE ====================
   isTimedEndless: false,
   teTimer: null,
@@ -1475,9 +1477,5 @@ Object.assign(window.App, {
     }
 
     this.isTimedEndless = false;
-  },
-
-
-  beginSession(questions, `⚡ Infinite Practice Mode (${subject === 'ALL' ? 'Multi-Subject' : subject} · 60% Hard)`, false, false);
   }
 });

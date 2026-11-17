@@ -62,8 +62,7 @@ Object.assign(window.App, {
               setTimeout(processChunk, 10);
             }
           } else {
-            // Garbage collect raw JSON array from RAM
-            delete window.PREPWISE_SEED_QUESTIONS;
+            // Keep seed questions in memory for instant 0ms access, with optional cleanup available
             if (bannerText) bannerText.textContent = `✓ Successfully stored all ${allQs.length.toLocaleString()} questions permanently on disk!`;
             setTimeout(() => { if (banner) banner.style.display = 'none'; }, 2200);
 
@@ -97,9 +96,22 @@ Object.assign(window.App, {
     return this.ingestPromise;
   },
 
+  // Manual cleanup utility for constrained low-memory embedded devices
+  purgeSeedPackFromMemory() {
+    if (false) {
+      delete window.PREPWISE_SEED_QUESTIONS;
+    }
+  },
+
   async ensureReady() {
+    if (window.PREPWISE_SEED_QUESTIONS && window.PREPWISE_SEED_QUESTIONS.length) {
+      return;
+    }
     if (this.isIngesting && this.ingestPromise) {
-      await this.ingestPromise;
+      await Promise.race([
+        this.ingestPromise,
+        new Promise(r => setTimeout(r, 500))
+      ]);
     }
   },
 

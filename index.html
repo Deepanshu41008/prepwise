@@ -20,15 +20,23 @@
 <body>
 
 <div class="app">
+  <!-- Global Fast Loading Overlay -->
+  <div id="appLoadingOverlay" class="loading-overlay" style="display:none">
+    <div class="loading-box">
+      <div class="loading-spinner"></div>
+      <div id="loadingOverlayMsg" style="font-weight:700;font-size:15px;color:var(--ink);margin-top:12px;">Loading Questions... 🎯</div>
+      <small style="color:var(--muted);margin-top:4px;">Preparing authentic NEET-UG practice</small>
+    </div>
+  </div>
+
   <aside class="sidebar">
     <div class="brand" title="PrepWise NEET-UG">prep<span>wise</span></div>
     <nav class="nav">
       <div class="nav-section-label">PRACTICE MODES</div>
       <button class="active" data-view="dashboard" onclick="App.showView('dashboard')" title="Home Dashboard"><i>🏠</i>Home</button>
-      <button data-view="timedEndlessSetup" onclick="App.openTimedEndlessSetup()" title="Timed Multi-Topic Marathon"><i>⏱️</i>Timed Marathon <span class="nav-pill-badge">Hot</span></button>
-      <button data-view="mocksHubView" onclick="App.showMocksHub()" title="Full 720-Mark Mock Exams"><i>📝</i>Full Mock Tests</button>
       <button data-view="setup" onclick="App.openSetup()" title="Practice Specific Chapter & Subtopics"><i>🎯</i>Chapter Practice</button>
-      <button data-view="confidence" onclick="App.startConfidenceMode()" title="Untimed Calm Practice"><i>⚡</i>Calm Practice</button>
+      <button data-view="mocksHubView" onclick="App.showMocksHub()" title="Full 720-Mark Mock Exams"><i>📝</i>Full Mock Tests</button>
+      <button data-view="timedEndlessSetup" onclick="App.openTimedEndlessSetup()" title="Timed Multi-Topic Marathon"><i>⏱️</i>Timed Marathon <span class="nav-pill-badge">Hot</span></button>
 
       <div class="nav-section-label" style="margin-top:14px">MY REVISION</div>
       <button data-view="growthBoardView" onclick="App.showGrowthBoard()" title="Track Your Accuracy, Speed & Scores"><i>📈</i>My Growth Board</button>
@@ -72,9 +80,8 @@
           <div class="eyebrow" title="NEET-UG Command Hub">🩺 NEET-UG 2025 / 2026 PREPARATION HUB</div>
           <h1 title="Welcome">Welcome, Future Doctor! 👋</h1>
         </div>
-        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-          <input type="text" id="chapterSearch" class="search-bar" placeholder="🔍 Search any chapter (e.g. Optics, Genetics, Equilibrium)..." oninput="App.onSearchInput(this.value)" title="Search Syllabus (81 Chs)">
-          <div class="class-pills" id="dashClassPills" title="Class Filter"></div>
+        <div class="topbar-badge">
+          <span class="tag" style="background:var(--mint);color:var(--teal);font-weight:700;font-size:12.5px;padding:6px 14px;border-radius:20px;">Target: 680+ GMC</span>
         </div>
       </header>
 
@@ -172,8 +179,35 @@
         </section>
       </div>
 
-      <div class="subj-tabs" id="dashSubjTabs" style="margin-bottom:18px"></div>
-      <div class="topics" id="topicCards"></div>
+      <!-- UNIFIED CHAPTER PRACTICE HUB -->
+      <div class="syllabus-hub">
+        <div class="syllabus-hub-header">
+          <div>
+            <div class="eyebrow" style="color:var(--teal)">81 CHAPTERS · NEET-UG 2025/2026 SYLLABUS</div>
+            <h2 style="font:700 22px 'Space Grotesk'">Practice by Chapter</h2>
+            <p style="color:var(--muted);font-size:13px;margin-top:2px;">Tap "▶ Start Practice (15 Qs)" on any chapter to start immediately, or tap "⚙️ Custom" to pick specific subtopics.</p>
+          </div>
+        </div>
+
+        <!-- Unified Controls Bar -->
+        <div class="syllabus-controls-bar">
+          <div class="search-wrap">
+            <input type="text" id="chapterSearch" class="search-bar" placeholder="🔍 Search any chapter (e.g. Kinematics, Genetics, Chemical Bonding, Cell)..." oninput="App.onSearchInput(this.value)" title="Search Syllabus (81 Chs)">
+          </div>
+          <div class="filter-controls-row">
+            <div class="filter-group">
+              <span class="filter-label">Class:</span>
+              <div class="class-pills" id="dashClassPills" title="Filter by Class"></div>
+            </div>
+            <div class="filter-group">
+              <span class="filter-label">Subject:</span>
+              <div class="subj-tabs" id="dashSubjTabs" title="Filter by Subject"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topics" id="topicCards"></div>
+      </div>
     </section>
 
     <!-- 2. FULL MOCKS HUB VIEW -->
@@ -967,9 +1001,9 @@
 <!-- Mobile Quick Navigation Bar -->
 <nav class="mobile-bottom-nav">
   <button class="mobile-nav-btn active" data-view="dashboard" onclick="App.showView('dashboard')"><i>🏠</i>Home</button>
+  <button class="mobile-nav-btn" data-view="setup" onclick="App.openSetup()"><i>🎯</i>Chapters</button>
   <button class="mobile-nav-btn" data-view="timedEndlessSetup" onclick="App.openTimedEndlessSetup()"><i>⏱️</i>Marathon</button>
   <button class="mobile-nav-btn" data-view="mocksHubView" onclick="App.showMocksHub()"><i>📝</i>Mocks</button>
-  <button class="mobile-nav-btn" data-view="growthBoardView" onclick="App.showGrowthBoard()"><i>📈</i>Growth</button>
   <button class="mobile-nav-btn" data-view="mistakesView" onclick="App.showMistakes()"><i>❌</i>Mistakes</button>
 </nav>
 
