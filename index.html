@@ -503,9 +503,19 @@
             </div>
           </div>
         </div>
-        <div style="display:flex;gap:12px;margin-top:22px;flex-wrap:wrap;">
-          <button class="primary" style="flex:1" onclick="App.startSubtopicDrill()" title="Start Practice Drill">Launch Drill (+4 / -1 Marking) →</button>
-          <button class="secondary" style="border-color:var(--teal);color:var(--teal)" onclick="App.startInfiniteDrill(document.getElementById('subjectSelect').value, Number(document.getElementById('countSelect').value))" title="Start Infinite Drill">⚡ Infinite Procedural Drill</button>
+        <div style="margin-top:24px;border-top:1px solid var(--line);padding-top:18px;">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+            <button class="primary" style="flex:2;min-width:240px;padding:12px 20px;font-size:14px;" onclick="App.startSubtopicDrill()" title="Practice Authentic Questions from Bank">
+              ▶ Launch Chapter Drill (5.64L Master Bank) →
+            </button>
+            <button class="secondary" style="flex:1;min-width:200px;padding:12px 16px;border-color:var(--teal);color:var(--teal);font-size:13px;" onclick="App.startInfiniteDrill(document.getElementById('subjectSelect').value, Number(document.getElementById('countSelect').value))" title="Algorithmic Generator">
+              ⚡ Infinite Procedural Generator
+            </button>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:12px;color:var(--muted);flex-wrap:wrap;gap:8px;">
+            <span>• <b>Chapter Drill</b>: Practice real, authentic NEET-UG questions from your 5.64 Lakh offline curated bank.</span>
+            <span>• <b>Infinite Generator</b>: Unlimited procedural questions calculated dynamically with formula variations.</span>
+          </div>
         </div>
       </div>
     </section>

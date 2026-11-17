@@ -68,7 +68,7 @@ Object.assign(window.App, {
     const elAvg = document.getElementById('gbAvgTime');
     if (elAvg) elAvg.textContent = totalAttempts ? `${avgTimeOverall}s / Q` : '— s/Q';
     const elNeg = document.getElementById('gbNegBleed');
-    if (elNeg) elNeg.textContent = `-${negBleed} marks`;
+    if (elNeg) elNeg.textContent = negBleed > 0 ? `-${negBleed} marks` : '0 marks';
     const elAir = document.getElementById('gbProjectedAir');
     if (elAir) elAir.textContent = airEstimate;
     const elCol = document.getElementById('gbCollegeBand');
