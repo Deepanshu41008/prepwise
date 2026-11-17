@@ -114,15 +114,31 @@ Object.assign(window.App, {
             if (!matchedSt) continue;
           }
 
-          const chips = Object.entries(meta.subtopics || {}).slice(0, 4).map(([st, cnt]) => `
+          const allSts = Object.keys(meta.subtopics || {});
+          const initialSts = allSts.slice(0, 5);
+          const extraSts = allSts.slice(5);
+
+          const initialChips = initialSts.map(st => `
             <span class="subtopic-chip" data-chap="${encodeURIComponent(chap)}" data-st="${encodeURIComponent(st)}" onclick="event.stopPropagation();App.onChipClick(this)" title="Practice ${st}">
               ${st}
             </span>
           `).join('');
 
+          let moreBtn = '';
+          let extraContainer = '';
+          if (extraSts.length > 0) {
+            const extraChips = extraSts.map(st => `
+              <span class="subtopic-chip" data-chap="${encodeURIComponent(chap)}" data-st="${encodeURIComponent(st)}" onclick="event.stopPropagation();App.onChipClick(this)" title="Practice ${st}">
+                ${st}
+              </span>
+            `).join('');
+            moreBtn = `<button type="button" class="subtopic-chip subtopic-expand-chip" data-more-count="${extraSts.length}" onclick="event.stopPropagation();App.toggleChapterSubtopics(this)" title="Click to view all ${allSts.length} micro-topics in ${safeChap}">+${extraSts.length} more topics ▾</button>`;
+            extraContainer = `<div class="extra-subtopics" style="display:none;flex-wrap:wrap;gap:5px;width:100%;margin-top:4px;">${extraChips}</div>`;
+          }
+
           const tagClass = subj === 'Physics' ? 'tag-physics' : (subj === 'Chemistry' ? 'tag-chemistry' : (subj === 'Botany' ? 'tag-botany' : 'tag-zoology'));
           const sIcon = subjIcons[subj] || '';
-          const qCount = meta.count || (Object.keys(meta.subtopics || {}).length * 800);
+          const qCount = meta.count || (allSts.length * 800);
           const safeSubj = subj.replace(/'/g, "\\'");
           const safeChap = chap.replace(/'/g, "\\'");
 
@@ -134,7 +150,14 @@ Object.assign(window.App, {
                 <span class="topic-count-tag">${qCount.toLocaleString()} Qs</span>
               </div>
               <h3 class="topic-title">${chap}</h3>
-              <div class="topic-subtopics-preview">${chips}</div>
+              <div class="topic-subtopics-header">
+                <small>📚 <b>${allSts.length} Micro-Topics:</b></small>
+              </div>
+              <div class="topic-subtopics-preview">
+                ${initialChips}
+                ${moreBtn}
+                ${extraContainer}
+              </div>
               <div class="topic-card-actions">
                 <button class="topic-drill-btn primary-drill-btn" onclick="event.stopPropagation();App.startInstantChapterPractice('${safeChap}')" title="Instantly start 15 questions from ${safeChap}">
                   ▶ Start Practice (15 Qs)
@@ -172,6 +195,24 @@ Object.assign(window.App, {
     const chap = decodeURIComponent(el.dataset.chap);
     const st = decodeURIComponent(el.dataset.st);
     this.quickSubtopicDrill(chap, st);
+  },
+
+  toggleChapterSubtopics(btn) {
+    const parent = btn.closest('.topic');
+    if (!parent) return;
+    const extra = parent.querySelector('.extra-subtopics');
+    if (!extra) return;
+    const isHidden = extra.style.display === 'none' || !extra.style.display;
+    if (isHidden) {
+      extra.style.display = 'flex';
+      btn.textContent = 'Show fewer topics ▴';
+      btn.classList.add('expanded');
+    } else {
+      extra.style.display = 'none';
+      const count = btn.dataset.moreCount || '';
+      btn.textContent = `+${count} more topics ▾`;
+      btn.classList.remove('expanded');
+    }
   },
 
   initCascadeDropdowns() {

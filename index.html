@@ -36,7 +36,7 @@
       <button class="active" data-view="dashboard" onclick="App.showView('dashboard')" title="Home Dashboard"><i>🏠</i>Home</button>
       <button data-view="setup" onclick="App.openSetup()" title="Practice Specific Chapter & Subtopics"><i>🎯</i>Chapter Practice</button>
       <button data-view="mocksHubView" onclick="App.showMocksHub()" title="Full 720-Mark Mock Exams"><i>📝</i>Full Mock Tests</button>
-      <button data-view="timedEndlessSetup" onclick="App.openTimedEndlessSetup()" title="Timed Multi-Topic Marathon"><i>⏱️</i>Timed Marathon <span class="nav-pill-badge">Hot</span></button>
+      <button data-view="timedEndlessSetup" onclick="App.openTimedEndlessSetup()" title="Timed Multi-Topic Marathon"><i>⏱️</i>Timed Marathon</button>
 
       <div class="nav-section-label" style="margin-top:14px">MY REVISION</div>
       <button data-view="growthBoardView" onclick="App.showGrowthBoard()" title="Track Your Accuracy, Speed & Scores"><i>📈</i>My Growth Board</button>
@@ -161,20 +161,63 @@
           </div>
         </section>
 
-        <section class="panel">
-          <div class="streak" title="Lifetime Net Score">
-            <div><small>Your Net Score (+4 / -1)</small><strong id="lifetimeScore">0 pts</strong></div>
-            <span class="tag" title="NEET Scale (+4 / -1)">NEET Scale</span>
+        <section class="panel scorecard-panel">
+          <div class="scorecard-header">
+            <div class="scorecard-title-group">
+              <span class="scorecard-badge">📊 NEET SCORECARD</span>
+            </div>
+            <span class="scorecard-scale-tag" title="National Testing Agency Official Marking (+4 for correct, -1 for incorrect)">NTA Scale (+4 / -1)</span>
           </div>
-          <div class="bar" title="Accuracy Meter"><div class="bar-fill" id="streakBar"></div></div>
+
+          <div class="scorecard-hero">
+            <div class="scorecard-hero-left">
+              <span class="scorecard-label">Cumulative Net Marks</span>
+              <div class="scorecard-val-row">
+                <strong id="lifetimeScore" class="scorecard-big-score">0 pts</strong>
+                <span class="scorecard-target-pill">Target: 720</span>
+              </div>
+            </div>
+            <div class="scorecard-hero-right">
+              <span class="scorecard-subtext">Accuracy Pace</span>
+              <div class="bar" title="Practice Consistency Meter"><div class="bar-fill" id="streakBar"></div></div>
+            </div>
+          </div>
+
           <div class="stats-grid">
-            <div class="stat-pill" title="Total Attempted"><small>Questions Solved</small><b id="attempted">0</b></div>
-            <div class="stat-pill" title="Overall Accuracy"><small>Accuracy</small><b id="accuracy">—</b></div>
-            <div class="stat-pill" title="Negative Marks Lost"><small>Negative Marks Lost</small><b id="negBleed" style="color:var(--red)">0</b></div>
-            <div class="stat-pill" title="Offline Bank"><small>Total Bank Size</small><b>5.64 Lakh Qs</b></div>
+            <div class="stat-pill stat-pill-attempted" title="Total Authentic Questions Solved">
+              <div class="stat-pill-icon">📝</div>
+              <div class="stat-pill-info">
+                <small>Solved</small>
+                <b id="attempted">0</b>
+              </div>
+            </div>
+            <div class="stat-pill stat-pill-accuracy" title="Overall Accuracy Rate">
+              <div class="stat-pill-icon">🎯</div>
+              <div class="stat-pill-info">
+                <small>Accuracy</small>
+                <b id="accuracy">—</b>
+              </div>
+            </div>
+            <div class="stat-pill stat-pill-neg" title="Negative Marks Lost (-1 each)">
+              <div class="stat-pill-icon">⚠️</div>
+              <div class="stat-pill-info">
+                <small>Neg. Bleed</small>
+                <b id="negBleed" style="color:var(--red)">0</b>
+              </div>
+            </div>
+            <div class="stat-pill stat-pill-bank" title="Total Offline Curated Master Bank">
+              <div class="stat-pill-icon">📚</div>
+              <div class="stat-pill-info">
+                <small>Bank Size</small>
+                <b>5.64L Qs</b>
+              </div>
+            </div>
           </div>
-          <div style="margin-top:16px;">
-            <button class="secondary" style="width:100%;font-size:13px;padding:8px;" onclick="App.showMistakes()">❌ Review My Mistakes Vault →</button>
+
+          <div class="scorecard-footer-action">
+            <button class="secondary scorecard-mistakes-btn" onclick="App.showMistakes()" title="Review questions you got wrong">
+              ❌ Review My Mistakes Vault →
+            </button>
           </div>
         </section>
       </div>
@@ -504,11 +547,11 @@
           </div>
         </div>
         <div style="margin-top:24px;border-top:1px solid var(--line);padding-top:18px;">
-          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-            <button class="primary" style="flex:2;min-width:240px;padding:12px 20px;font-size:14px;" onclick="App.startSubtopicDrill()" title="Practice Authentic Questions from Bank">
+          <div class="setup-actions-row">
+            <button class="primary setup-primary-btn" onclick="App.startSubtopicDrill()" title="Practice Authentic Questions from Bank">
               ▶ Launch Chapter Drill (5.64L Master Bank) →
             </button>
-            <button class="secondary" style="flex:1;min-width:200px;padding:12px 16px;border-color:var(--teal);color:var(--teal);font-size:13px;" onclick="App.startInfiniteDrill(document.getElementById('subjectSelect').value, Number(document.getElementById('countSelect').value))" title="Algorithmic Generator">
+            <button class="secondary setup-secondary-btn" onclick="App.startInfiniteDrill(document.getElementById('subjectSelect').value, Number(document.getElementById('countSelect').value))" title="Algorithmic Generator">
               ⚡ Infinite Procedural Generator
             </button>
           </div>

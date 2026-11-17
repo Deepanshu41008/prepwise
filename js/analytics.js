@@ -252,7 +252,7 @@ Object.assign(window.App, {
           <td><b>${c.chap}</b> <small style="color:var(--muted)">(Class ${c.cls})</small></td>
           <td><b>${c.total}</b> Qs</td>
           <td><b style="color:${c.total ? (c.acc >= 75 ? 'var(--emerald)' : (c.acc >= 50 ? '#b45309' : 'var(--red)')) : 'var(--muted)'}">${c.total ? c.acc + '%' : '—'}</b></td>
-          <td><span style="color:var(--red);font-weight:700">-${c.wrg}</span> marks</td>
+          <td>${c.wrg > 0 ? `<span style="color:var(--red);font-weight:700">-${c.wrg} marks</span>` : `<span style="color:var(--muted)">0 marks</span>`}</td>
           <td><span class="gb-badge ${c.badgeCls}">${c.badgeText}</span></td>
           <td>
             <button class="secondary" style="padding:4px 10px;font-size:12px;border-color:var(--teal);color:var(--teal)" onclick="App.openSetupForChapter('${c.cls}','${c.subj}','${safeChap}')">
@@ -317,7 +317,7 @@ Object.assign(window.App, {
     const weakContainer = document.getElementById('weakSubtopics');
     if (weakContainer) {
       weakContainer.innerHTML = weak.length
-        ? weak.map(([st, c]) => `<p style="padding:10px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between"><b>${st}</b> <span style="color:var(--red);font-weight:700">-${c} marks bled</span></p>`).join('')
+        ? weak.map(([st, c]) => `<p style="padding:10px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between"><b>${st}</b> ${c > 0 ? `<span style="color:var(--red);font-weight:700">-${c} marks bled</span>` : `<span style="color:var(--muted)">0 marks</span>`}</p>`).join('')
         : '<div class="empty">No subtopic mark leaks yet. Excellent accuracy!</div>';
     }
 
