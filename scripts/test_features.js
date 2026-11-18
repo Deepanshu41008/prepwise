@@ -135,6 +135,18 @@ Selected Option: B`;
   assert(result2.hasError === true, 'Unit conversion trap should be detected');
   console.log(`✓ Solution Inspector Passed: Chemistry unit trap detected (${result2.suggestedTag})`);
 
+  // Genetics Dihybrid Ratio Test
+  const bioDemoQ = {
+    subject: "Botany",
+    chapter: "Principles of Inheritance and Variation",
+    question: "In a dihybrid cross, find number of recombinant progeny out of 1600",
+    answer: "C"
+  };
+  const bioTrapWork = `Recombinant fraction = 9/16\nTotal = 9/16 * 1600 = 900`;
+  const result3 = window.App.evaluateSteps(bioTrapWork, bioDemoQ);
+  assert(result3.hasError === true, 'Genetics ratio trap should be detected');
+  console.log(`✓ Solution Inspector Passed: Genetics ratio trap detected (${result3.suggestedTag})`);
+
   // Log to Mistake Vault
   await window.App.logInspectorMistake(result1.suggestedTag);
   console.log(`✓ Mistake Vault Logging Tested`);

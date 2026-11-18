@@ -39,12 +39,14 @@ Object.assign(window.App, {
     const report = document.getElementById('inspectorReportArea');
     const status = document.getElementById('inspectorStatus');
     const textInput = document.getElementById('inspectorTextWork');
+    const ocrBtn = document.getElementById('inspectorOcrBtn');
 
     if (preview) { preview.src = ''; preview.style.display = 'none'; }
     if (canvas) canvas.style.display = 'none';
     if (report) { report.style.display = 'none'; report.innerHTML = ''; }
     if (status) status.innerHTML = 'Upload or photograph your handwritten solution to analyze.';
     if (textInput) textInput.value = '';
+    if (ocrBtn) ocrBtn.style.display = 'none';
   },
 
   renderInspectorQuestionHeader() {
@@ -66,7 +68,8 @@ Object.assign(window.App, {
     reader.onload = (e) => {
       this.inspectorCurrentImage = e.target.result;
       this.displayUploadedImage(e.target.result);
-      this.runAutomatedDiagnosticScan(file.name);
+      // Automatically launch in-browser OCR on uploaded file
+      this.runInBrowserOcr();
     };
     reader.readAsDataURL(file);
   },
@@ -74,6 +77,7 @@ Object.assign(window.App, {
   displayUploadedImage(dataUrl) {
     const preview = document.getElementById('inspectorImagePreview');
     const canvas = document.getElementById('inspectorCanvas');
+    const ocrBtn = document.getElementById('inspectorOcrBtn');
     if (!preview || !canvas) return;
 
     preview.src = dataUrl;
@@ -88,6 +92,7 @@ Object.assign(window.App, {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       canvas.style.display = 'block';
       preview.style.display = 'none'; // Canvas provides clean high-contrast preview
+      if (ocrBtn) ocrBtn.style.display = 'inline-block';
     };
     img.src = dataUrl;
   },
@@ -108,6 +113,87 @@ Object.assign(window.App, {
       d[i + 2] = val;
     }
     ctx.putImageData(imgData, 0, 0);
+  },
+
+  async runInBrowserOcr() {
+    const canvas = document.getElementById('inspectorCanvas');
+    const status = document.getElementById('inspectorStatus');
+    const textInput = document.getElementById('inspectorTextWork');
+
+    if (!canvas || canvas.style.display === 'none') {
+      if (status) status.innerHTML = '<span style="color:var(--amber)">⚠️ Please upload an image of your solution first.</span>';
+      return;
+    }
+
+    if (status) status.innerHTML = '<span style="color:var(--teal)">⚡ Initializing in-browser Tesseract OCR engine...</span>';
+
+    try {
+      if (typeof Tesseract === 'undefined') {
+        if (status) status.innerHTML = '<span style="color:var(--teal)">⏳ Loading Tesseract.js WebAssembly OCR library...</span>';
+        await this.loadTesseractScript();
+      }
+
+      if (typeof Tesseract === 'undefined') {
+        throw new Error('Tesseract library could not be loaded.');
+      }
+
+      if (status) status.innerHTML = '<span style="color:var(--teal)">🔍 Scanning image & recognizing handwriting...</span>';
+
+      const res = await Tesseract.recognize(
+        canvas,
+        'eng',
+        {
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              const pct = Math.round((m.progress || 0) * 100);
+              if (status) status.innerHTML = `<span style="color:var(--teal)">🔍 In-Browser OCR: Recognizing text... <b>${pct}%</b></span>`;
+            } else if (m.status) {
+              if (status) status.innerHTML = `<span style="color:var(--muted)">⏳ OCR Engine: ${m.status}...</span>`;
+            }
+          }
+        }
+      );
+
+      const rawText = (res && res.data && res.data.text) ? res.data.text.trim() : '';
+      const cleaned = this.cleanOcrMathText(rawText);
+
+      if (cleaned && cleaned.length > 3) {
+        if (textInput) textInput.value = cleaned;
+        if (status) status.innerHTML = `<span style="color:var(--green)">✓ In-browser OCR scan complete! Check recognized steps below:</span>`;
+        this.runDiagnosticAnalysis(cleaned);
+      } else {
+        if (status) status.innerHTML = `<span style="color:var(--amber)">⚠️ Handwriting unclear or faint. High-contrast preview ready; please review or type steps below to check diagnostics.</span>`;
+        const fallbackText = (textInput && textInput.value) ? textInput.value : '';
+        if (fallbackText) this.runDiagnosticAnalysis(fallbackText);
+      }
+    } catch (err) {
+      console.warn('Tesseract OCR in-browser notice:', err);
+      if (status) status.innerHTML = `<span style="color:var(--amber)">⚠️ In-browser OCR offline notice: Pre-processed image ready. You can type or paste steps below to run diagnostic check.</span>`;
+      const currentText = textInput ? textInput.value : '';
+      if (currentText && currentText.trim().length > 3) {
+        this.runDiagnosticAnalysis(currentText);
+      }
+    }
+  },
+
+  loadTesseractScript() {
+    return new Promise((resolve, reject) => {
+      if (window.Tesseract) return resolve(window.Tesseract);
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      script.onload = () => resolve(window.Tesseract);
+      script.onerror = () => reject(new Error('Tesseract script network load error'));
+      document.head.appendChild(script);
+    });
+  },
+
+  cleanOcrMathText(raw) {
+    if (!raw) return '';
+    return raw
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/(\d)[oO](\d)/g, '$10$2') // Fix letter O inside numbers
+      .trim();
   },
 
   loadDemoScratchpad(type = 'kinematics') {
@@ -134,18 +220,18 @@ Object.assign(window.App, {
   },
 
   runAutomatedDiagnosticScan(fileName = 'handwritten_work.png') {
-    const status = document.getElementById('inspectorStatus');
-    if (status) status.innerHTML = `<span style="color:var(--teal)">⚡ Analyzing OCR handwriting steps from ${fileName}...</span>`;
+    const canvas = document.getElementById('inspectorCanvas');
+    if (canvas && canvas.style.display !== 'none') {
+      this.runInBrowserOcr();
+      return;
+    }
 
-    // Extract student text from typed work or simulated handwriting transcription
     const typedWork = (document.getElementById('inspectorTextWork') || {}).value;
     const workText = typedWork && typedWork.trim().length > 5 
       ? typedWork 
       : "Given: u = 40, theta = 30, g = 10\nFormula: R = (u^2 * sin(theta)) / g\nStep 1: R = (1600 * 0.5) / 10\nStep 2: R = 80 m\nChosen Answer: B";
 
-    setTimeout(() => {
-      this.runDiagnosticAnalysis(workText);
-    }, 600);
+    this.runDiagnosticAnalysis(workText);
   },
 
   runDiagnosticAnalysis(userWork) {
@@ -296,6 +382,32 @@ Object.assign(window.App, {
         userSnippet: 'M = 0.1 / 500 = 0.0002 M',
         officialStep: '$M = \\frac{0.1\\text{ mol}}{0.5\\text{ L}} = 0.2\\text{ M}$',
         feedback: 'Correct Answer is 0.2 M.'
+      });
+    } else if (text.includes('9/16') || text.includes('dihybrid') || text.includes('recombinant') || text.includes('900')) {
+      // Genetics dihybrid ratio distractor trap
+      hasError = true;
+      suggestedTag = 'Formula Forgotten';
+      title = 'Dihybrid Cross Recombinant Ratio Trap Detected';
+      summary = '9/16 represents the parental double-dominant phenotype, NOT the recombinant phenotypes!';
+      steps.push({
+        name: 'Dihybrid Punnett Ratio Breakdown',
+        status: 'valid',
+        userSnippet: 'Cross: AaBb x AaBb -> 9:3:3:1 ratio identified',
+        officialStep: 'Parental types: 9/16 (dominant) + 1/16 (recessive) = 10/16. Recombinant types: 3/16 + 3/16 = 6/16.'
+      });
+      steps.push({
+        name: 'Recombinant Fraction Selection',
+        status: 'error',
+        userSnippet: 'Recombinants = 9/16',
+        officialStep: 'Recombinant fraction = $\\frac{3+3}{16} = \\frac{6}{16} = \\frac{3}{8}$',
+        feedback: '<b>NTA Distractor Trap:</b> Recombinant phenotypes are the new non-parental combinations (Round Green + Wrinkled Yellow = 3/16 + 3/16 = 6/16). 9/16 is the parental type!'
+      });
+      steps.push({
+        name: 'Total Progeny Recombinant Count',
+        status: 'error',
+        userSnippet: '9/16 * 1600 = 900 (Selected Option A)',
+        officialStep: '$\\frac{6}{16} \\times 1600 = 600$ (Correct Answer)',
+        feedback: 'Correct answer is 600 recombinant plants.'
       });
     } else {
       // General Diagnostic parser

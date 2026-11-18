@@ -13,6 +13,7 @@
 <script src="https://unpkg.com/dexie@4.0.8/dist/dexie.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="data/seed_meta.js"></script>
 <script src="data/flashcards_data.js"></script>
 <script defer src="data/seed_pack.js"></script>
@@ -1228,8 +1229,9 @@
               <canvas id="inspectorCanvas" style="display:none;width:100%;border-radius:10px;border:1px solid var(--line);"></canvas>
             </div>
 
-            <div style="margin-top:12px;display:flex;gap:8px;">
+            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
               <button class="secondary" style="flex:1;font-size:12px;" onclick="App.enhanceImageContrast()">✨ Enhance Handwriting Contrast</button>
+              <button id="inspectorOcrBtn" class="primary" style="flex:1;font-size:12px;display:none;background:var(--teal);" onclick="App.runInBrowserOcr()">⚡ Run In-Browser OCR</button>
             </div>
           </div>
 
