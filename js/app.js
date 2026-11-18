@@ -114,7 +114,13 @@ Object.assign(window.App, {
             if (!matchedSt) continue;
           }
 
+          const safeSubj = subj.replace(/'/g, "\\'");
+          const safeChap = chap.replace(/'/g, "\\'");
+          const tagClass = subj === 'Physics' ? 'tag-physics' : (subj === 'Chemistry' ? 'tag-chemistry' : (subj === 'Botany' ? 'tag-botany' : 'tag-zoology'));
+          const sIcon = subjIcons[subj] || '';
           const allSts = Object.keys(meta.subtopics || {});
+          const qCount = meta.count || (allSts.length * 800);
+
           const initialSts = allSts.slice(0, 5);
           const extraSts = allSts.slice(5);
 
@@ -135,12 +141,6 @@ Object.assign(window.App, {
             moreBtn = `<button type="button" class="subtopic-chip subtopic-expand-chip" data-more-count="${extraSts.length}" onclick="event.stopPropagation();App.toggleChapterSubtopics(this)" title="Click to view all ${allSts.length} micro-topics in ${safeChap}">+${extraSts.length} more topics ▾</button>`;
             extraContainer = `<div class="extra-subtopics" style="display:none;flex-wrap:wrap;gap:5px;width:100%;margin-top:4px;">${extraChips}</div>`;
           }
-
-          const tagClass = subj === 'Physics' ? 'tag-physics' : (subj === 'Chemistry' ? 'tag-chemistry' : (subj === 'Botany' ? 'tag-botany' : 'tag-zoology'));
-          const sIcon = subjIcons[subj] || '';
-          const qCount = meta.count || (allSts.length * 800);
-          const safeSubj = subj.replace(/'/g, "\\'");
-          const safeChap = chap.replace(/'/g, "\\'");
 
           cards.push(`
             <div class="topic" data-cls="${cls}" data-subj="${encodeURIComponent(subj)}" data-chap="${encodeURIComponent(chap)}">
@@ -536,19 +536,23 @@ Object.assign(window.App, {
     });
 
     // Update mistake count badge in sidebar
-    db.attempts.where('is_correct').equals(0).count().then(cnt => {
-      const b = document.getElementById('navMistakeCount');
-      if (b) {
-        if (cnt > 0) {
-          b.textContent = cnt;
-          b.style.display = 'inline-block';
-        } else {
-          b.style.display = 'none';
+    if (window.db && db.attempts && typeof db.attempts.where === 'function') {
+      db.attempts.where('correct').equals(0).count().then(cnt => {
+        const b = document.getElementById('navMistakeCount');
+        if (b) {
+          if (cnt > 0) {
+            b.textContent = cnt;
+            b.style.display = 'inline-block';
+          } else {
+            b.style.display = 'none';
+          }
         }
-      }
-    }).catch(() => {});
+      }).catch(() => {});
+    }
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window.scrollTo === 'function') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   },
 
   async startMassStreaming(targetCount = 2000) {

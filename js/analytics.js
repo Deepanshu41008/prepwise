@@ -187,10 +187,11 @@ Object.assign(window.App, {
     }
   },
 
-  renderGbChaptersTable(attempts) {
+  renderGbChaptersTable(attempts = []) {
     const tbody = document.getElementById('gbChaptersTableBody');
     if (!tbody) return;
 
+    attempts = Array.isArray(attempts) ? attempts : [];
     const chapMap = {};
     attempts.forEach(a => {
       const c = a.chapter;
