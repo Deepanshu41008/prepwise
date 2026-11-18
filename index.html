@@ -13,7 +13,6 @@
 <script src="https://unpkg.com/dexie@4.0.8/dist/dexie.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="data/seed_meta.js"></script>
 <script src="data/flashcards_data.js"></script>
 <script defer src="data/seed_pack.js"></script>
@@ -566,6 +565,13 @@
             <select id="statusSelect" title="Attempt Filter">
               <option value="all">All Questions</option>
               <option value="mistakes">Previously Wrong Only</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="practiceModeSelect">Solution & Feedback Mode</label>
+            <select id="practiceModeSelect" title="Select whether solutions appear immediately or at end as a test">
+              <option value="instant" selected>💡 Instant Solution (Show After Each Question)</option>
+              <option value="exam">⏱️ Mini-Test Mode (Reveal All Solutions at End)</option>
             </select>
           </div>
           <div class="field" style="grid-column:1/-1">
@@ -1229,9 +1235,8 @@
               <canvas id="inspectorCanvas" style="display:none;width:100%;border-radius:10px;border:1px solid var(--line);"></canvas>
             </div>
 
-            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+            <div style="margin-top:12px;display:flex;gap:8px;">
               <button class="secondary" style="flex:1;font-size:12px;" onclick="App.enhanceImageContrast()">✨ Enhance Handwriting Contrast</button>
-              <button id="inspectorOcrBtn" class="primary" style="flex:1;font-size:12px;display:none;background:var(--teal);" onclick="App.runInBrowserOcr()">⚡ Run In-Browser OCR</button>
             </div>
           </div>
 

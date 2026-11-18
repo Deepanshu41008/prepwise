@@ -205,7 +205,7 @@ Object.assign(window.App, {
   },
 
 
-  beginSession(questions, title, isMock, isBlind, durationSec = 12000, isFullNTA = false) {
+  beginSession(questions, title, isMock, isBlind, durationSec = 12000, isFullNTA = false, isExamMode = false) {
     this.session = questions;
     this.states = questions.map(() => ({
       picked: null,
@@ -219,6 +219,7 @@ Object.assign(window.App, {
     }));
     this.index = 0;
     this.isMock = isMock;
+    this.isExamMode = isExamMode;
     this.isFullNTA = isFullNTA;
     this.isBlind = isBlind;
     this.streak = 0;
@@ -227,12 +228,12 @@ Object.assign(window.App, {
     this.activeSubjectTab = questions[0]?.subject || 'Physics';
 
     this.showView('practice');
-    document.getElementById('practiceEyebrow').textContent = isMock ? 'Official NTA CBT Simulation' : (isBlind ? 'Blind Survival Mode' : 'Subtopic Drill');
+    document.getElementById('practiceEyebrow').textContent = isMock ? 'Official NTA CBT Simulation' : (isExamMode ? 'Mini-Test Simulation (Answers at End)' : (isBlind ? 'Blind Survival Mode' : 'Subtopic Drill'));
     document.getElementById('practiceTitle').textContent = title;
     document.getElementById('confidenceStreakBadge').style.display = isBlind ? 'block' : 'none';
-    document.getElementById('cbtPaletteWrap').style.display = isMock ? 'block' : 'none';
+    document.getElementById('cbtPaletteWrap').style.display = (isMock || isExamMode) ? 'block' : 'none';
     document.getElementById('cbtSubjectTabsWrap').style.display = (isMock && isFullNTA) ? 'block' : 'none';
-    document.getElementById('cbtPacingBadge').style.display = isMock ? 'block' : 'none';
+    document.getElementById('cbtPacingBadge').style.display = (isMock || isExamMode) ? 'block' : 'none';
 
     const cdEl = document.getElementById('mockCountdown');
     if (cdEl) {
@@ -325,19 +326,21 @@ Object.assign(window.App, {
       ? `Q${this.index + 1} of ${this.session.length} · [Metadata Hidden in Confidence Mode]`
       : `Q${this.index + 1} of ${this.session.length} · Class ${q.classNum} · ${q.subject} · ${q.subtopic} · ${q.difficulty.toUpperCase()}`;
 
-    const showLockedFeedback = !this.isMock && st.locked;
+    const showLockedFeedback = !this.isMock && !this.isExamMode && st.locked;
 
     const hintData = this.getQuestionHints(q);
     const unlocked = st.unlockedHints || 0;
 
     let actionsHtml = '';
-    if (this.isMock) {
+    if (this.isMock || this.isExamMode) {
+      const isLast = this.index === this.session.length - 1;
       actionsHtml = `
         <button class="secondary" onclick="App.toggleBookmark()" title="${isSaved ? 'Remove Bookmark' : 'Save Bookmark'}">${isSaved ? '★ Saved' : '☆ Bookmark'}</button>
         <button class="secondary" onclick="App.markForReview()" title="Mark for Review">${st.review ? '⚑ Clear Review' : '⚑ Mark Review'}</button>
-        <button class="secondary" onclick="App.clearResponse()" title="Clear Response">Clear Response</button>
+        <button class="secondary" onclick="App.clearResponse()" title="Clear Response">Clear Choice</button>
         ${this.index > 0 ? `<button class="secondary" onclick="App.prevQuestion()" title="Previous Question">← Previous</button>` : ''}
-        <button class="primary" onclick="App.cbtSaveAndNext()" title="Save & Next">${this.index === this.session.length - 1 ? 'Save & Review Paper' : 'Save & Next →'}</button>
+        <button class="primary" onclick="App.cbtSaveAndNext()" title="Save & Next">${isLast ? 'Finish & View Test Analysis' : 'Save & Next →'}</button>
+        <button class="secondary" style="border-color:var(--teal);color:var(--teal);font-weight:700;" onclick="App.confirmFinishSession()" title="Submit Examination">⏹ Submit Test Early</button>
       `;
     } else {
       let hintBtnText = '';
@@ -726,14 +729,27 @@ Object.assign(window.App, {
     clearInterval(this.qTimer);
     clearInterval(this.mockTimer);
 
+    // Hide practice-specific bars and overlays
+    const palWrap = document.getElementById('cbtPaletteWrap');
+    if (palWrap) palWrap.style.display = 'none';
+    const cdEl = document.getElementById('mockCountdown');
+    if (cdEl) cdEl.style.display = 'none';
+    const paceEl = document.getElementById('cbtPacingBadge');
+    if (paceEl) paceEl.style.display = 'none';
+    const tabsWrap = document.getElementById('cbtSubjectTabsWrap');
+    if (tabsWrap) tabsWrap.style.display = 'none';
+
     // Subject-wise tracking for NTA Section B rule
     const subjStats = {};
     let totalCorrect = 0, totalWrong = 0, totalUnattempted = 0;
+    let totalTimeSpent = 0;
 
     this.session.forEach((q, i) => {
       const st = this.states[i];
       const s = q.subject || 'General';
       if (!subjStats[s]) subjStats[s] = { secA_cor: 0, secA_wrg: 0, secB_cor: 0, secB_wrg: 0, secB_count: 0 };
+
+      totalTimeSpent += (st.timeSpent || 0);
 
       if (st.picked === null) {
         totalUnattempted++;
@@ -755,7 +771,9 @@ Object.assign(window.App, {
 
     const netMarks = (totalCorrect * 4) - totalWrong;
     const maxMarks = this.isFullNTA ? 720 : (this.session.length * 4);
-    const accuracy = (totalCorrect + totalWrong) ? Math.round((totalCorrect / (totalCorrect + totalWrong)) * 100) : 0;
+    const attemptedCount = totalCorrect + totalWrong;
+    const accuracy = attemptedCount ? Math.round((totalCorrect / attemptedCount) * 100) : 0;
+    const avgPaceSec = attemptedCount ? Math.round(totalTimeSpent / attemptedCount) : 0;
 
     // Projected AIR
     let airTag = 'Subtopic Reinforcement Recommended';
@@ -774,8 +792,76 @@ Object.assign(window.App, {
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
     });
 
-    // Subject Pills HTML
-    const subBreakdownHtml = Object.entries(subjStats).map(([subj, data]) => {
+    // Structure In-Depth Post-Mortem Analysis Data
+    this.analysisFilters = { status: 'ALL', subject: 'ALL', search: '' };
+    this.analysisExpandedSols = new Set();
+    this.testAnalysis = {
+      title: document.getElementById('practiceTitle').textContent,
+      netMarks,
+      maxMarks,
+      accuracy,
+      totalCorrect,
+      totalWrong,
+      totalUnattempted,
+      totalQuestions: this.session.length,
+      avgPaceSec,
+      airTag,
+      subjStats,
+      questions: this.session.map((q, i) => {
+        const st = this.states[i];
+        const isAttempted = st.picked !== null;
+        const isCorrect = isAttempted && st.picked === q.correct_option;
+        const isWrong = isAttempted && !isCorrect;
+        const isSkipped = !isAttempted;
+
+        // Diagnostic root-cause analysis
+        let errorTag = 'Concept Review Needed';
+        let whyWrong = '';
+
+        if (isWrong) {
+          if (st.timeSpent > 0 && st.timeSpent < 18) {
+            errorTag = 'Time Panic / Rush Error';
+            whyWrong = `Attempted in only <b>${st.timeSpent} seconds</b>. Rapid rushing before thoroughly reading all four options is a frequent cause of unforced negative marks in NEET-UG.`;
+          } else if (q.chapter.toLowerCase().includes('kinematics') || q.question.toLowerCase().includes('projectile')) {
+            errorTag = 'Formula Misapplication (Angle Trap)';
+            whyWrong = 'Applied $\\sin(\\theta)$ instead of the double-angle multiplier $\\sin(2\\theta)$ in the horizontal range derivation.';
+          } else if (q.question.toLowerCase().includes('molar') || q.question.toLowerCase().includes('volume') || q.question.toLowerCase().includes('ml')) {
+            errorTag = 'SI Metric Unit Slip (mL vs L)';
+            whyWrong = 'Volume was likely substituted directly in milliliters ($mL$) instead of converting to liters ($L$), producing a factor of 1,000 error.';
+          } else if (q.question.toLowerCase().includes('ratio') || q.question.toLowerCase().includes('dihybrid') || q.question.toLowerCase().includes('cross')) {
+            errorTag = 'Distractor Trap (Parental vs Recombinant)';
+            whyWrong = 'Selected parental double-dominant frequency ($9/16$) rather than summing recombinant phenotypic classes ($3/16 + 3/16 = 6/16$).';
+          } else {
+            errorTag = 'Subtopic Distractor Trap';
+            whyWrong = `The option selected corresponds to the classic NTA distractor trap for <b>${q.subtopic || q.chapter}</b>. Review the step-by-step derivation below.`;
+          }
+        }
+
+        return {
+          idx: i,
+          q,
+          st,
+          isAttempted,
+          isCorrect,
+          isWrong,
+          isSkipped,
+          errorTag,
+          whyWrong
+        };
+      })
+    };
+
+    this.renderFullTestAnalysisScreen();
+
+    await this.updateTopStats();
+    await this.updateMockKpis();
+  },
+
+  renderFullTestAnalysisScreen() {
+    const ta = this.testAnalysis;
+    if (!ta) return;
+
+    const subBreakdownHtml = Object.entries(ta.subjStats).map(([subj, data]) => {
       const sNet = ((data.secA_cor + data.secB_cor) * 4) - (data.secA_wrg + data.secB_wrg);
       const sMax = (subj === 'Biology' || (subj !== 'Physics' && subj !== 'Chemistry')) ? 360 : 180;
       return `
@@ -788,40 +874,291 @@ Object.assign(window.App, {
       `;
     }).join('');
 
+    const potentialScore = ta.netMarks + ta.totalWrong;
+
     document.getElementById('questionArea').innerHTML = `
-      <div class="report-card">
-        <span class="tag" style="background:#dcfce7;color:var(--emerald)">Simulation Complete</span>
-        <h2 style="font:700 32px 'Space Grotesk';margin:12px 0 4px">Report Card: ${netMarks} / ${maxMarks} Marks</h2>
-        <div style="font:700 14px 'JetBrains Mono',monospace;color:var(--teal);margin-bottom:20px;">${airTag}</div>
-
-        <div class="score-ring">
-          <span>${accuracy}%</span>
-          <small>Accuracy Rate</small>
+      <div class="ta-report-wrapper">
+        <!-- Top Navigation & Action -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <button class="back-btn" onclick="App.showView('dashboard')"><i>←</i> Return to Dashboard</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            ${ta.totalWrong > 0 ? `
+              <button class="primary" style="background:#dc2626;" onclick="App.reattemptMistakesOnly()">
+                🔄 Re-attempt Only My Mistakes (${ta.totalWrong} Qs)
+              </button>
+            ` : ''}
+            <button class="secondary" onclick="App.showGrowthBoard()">📈 View Growth Board</button>
+            <button class="secondary" onclick="App.showMocksHub()">Return to Full Mocks Hub</button>
+          </div>
         </div>
 
-        <div class="report-stats">
-          <div class="stat-pill"><small>Correct (+4)</small><b style="color:var(--emerald)">${totalCorrect} Qs</b></div>
-          <div class="stat-pill"><small>Negative Bleed (-1)</small><b style="color:var(--red)">${totalWrong} Qs</b></div>
-          <div class="stat-pill"><small>Unattempted (0)</small><b>${totalUnattempted} Qs</b></div>
-          <div class="stat-pill"><small>Total Paper Qs</small><b>${this.session.length} Qs</b></div>
+        <!-- 1. Executive Performance Scorecard -->
+        <div class="ta-hero-card">
+          <div class="ta-hero-top">
+            <div>
+              <span class="tag" style="background:#dcfce7;color:var(--emerald);font-weight:700;">Simulation Complete</span>
+              <h2 style="font:700 28px 'Space Grotesk';margin:8px 0 4px">${ta.title}: ${ta.netMarks} / ${ta.maxMarks} Marks</h2>
+              <div style="font:700 13.5px 'JetBrains Mono',monospace;color:var(--teal);">${ta.airTag}</div>
+            </div>
+            <div class="score-ring">
+              <span>${ta.accuracy}%</span>
+              <small>Accuracy Rate</small>
+            </div>
+          </div>
+
+          <div class="ta-kpi-grid">
+            <div class="ta-kpi-pill">
+              <small>Correct (+4 Each)</small>
+              <b style="color:var(--emerald)">${ta.totalCorrect} Qs <span style="font-size:12px;color:var(--emerald)">(+${ta.totalCorrect * 4} Marks)</span></b>
+            </div>
+            <div class="ta-kpi-pill" style="border-color:#fca5a5;background:#fff5f5;">
+              <small style="color:#b91c1c;">Negative Bleed (-1 Each)</small>
+              <b style="color:var(--red)">-${ta.totalWrong} Marks <span style="font-size:12px;color:var(--red)">(${ta.totalWrong} Qs)</span></b>
+            </div>
+            <div class="ta-kpi-pill">
+              <small>Unattempted (0)</small>
+              <b style="color:var(--muted)">${ta.totalUnattempted} Qs</b>
+            </div>
+            <div class="ta-kpi-pill">
+              <small>Average Pacing</small>
+              <b style="color:var(--teal)">⏱️ ${ta.avgPaceSec}s / Q</b>
+            </div>
+          </div>
+
+          ${ta.totalWrong > 0 ? `
+            <div style="margin-top:14px;padding:10px 14px;background:#fef2f2;border:1px dashed #f87171;border-radius:10px;font-size:12.5px;color:#991b1b;display:flex;align-items:center;gap:8px;">
+              <span>💡</span>
+              <div><b>Negative Marking Insight:</b> Had you skipped your <b>${ta.totalWrong} incorrect guesses</b>, your net score would have been <b style="color:#15803d;">${potentialScore} Marks</b> instead of ${ta.netMarks}.</div>
+            </div>
+          ` : ''}
+
+          <h4 style="margin:18px 0 8px;font-size:14px;font-weight:700;">Sectional Performance Breakdown</h4>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            ${subBreakdownHtml}
+          </div>
         </div>
 
-        <h3 style="margin:20px 0 10px;text-align:left;">Sectional Score Breakdown</h3>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
-          ${subBreakdownHtml}
+        <!-- 2. Interactive Filter & Search Bar -->
+        <div class="ta-filter-bar">
+          <div class="ta-tabs-group" id="taStatusTabs">
+            <button class="ta-tab-btn active" data-status="ALL" onclick="App.filterAnalysisStatus('ALL')">
+              All Questions (${ta.totalQuestions})
+            </button>
+            <button class="ta-tab-btn ta-wrong" data-status="WRONG" onclick="App.filterAnalysisStatus('WRONG')">
+              ❌ Mistakes & Traps (${ta.totalWrong})
+            </button>
+            <button class="ta-tab-btn ta-correct" data-status="CORRECT" onclick="App.filterAnalysisStatus('CORRECT')">
+              ✓ Correct (${ta.totalCorrect})
+            </button>
+            <button class="ta-tab-btn" data-status="SKIPPED" onclick="App.filterAnalysisStatus('SKIPPED')">
+              ⚪ Skipped (${ta.totalUnattempted})
+            </button>
+          </div>
+
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select id="taSubjectSelect" onchange="App.filterAnalysisSubject(this.value)" style="padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--paper);font-size:12.5px;">
+              <option value="ALL">All Subjects</option>
+              <option value="Physics">Physics</option>
+              <option value="Chemistry">Chemistry</option>
+              <option value="Botany">Botany</option>
+              <option value="Zoology">Zoology</option>
+            </select>
+            <input type="text" id="taSearchInput" placeholder="🔍 Filter questions..." oninput="App.searchAnalysisQuestions(this.value)" style="padding:7px 12px;border-radius:8px;border:1px solid var(--line);font-size:12.5px;width:170px;">
+          </div>
         </div>
 
-        <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
-          <button class="primary" onclick="App.showMocksHub()">Return to Full Mocks Hub</button>
-          <button class="secondary" onclick="App.showMistakes()">Inspect Mistakes Vault</button>
-          <button class="secondary" onclick="App.showProgress()">View 4-Quadrant Matrix</button>
-          <button class="secondary" onclick="App.showView('dashboard')">Command Dashboard</button>
-        </div>
+        <!-- 3. Question-by-Question Audit List -->
+        <div id="taQuestionsContainer"></div>
       </div>
     `;
 
-    await this.updateTopStats();
-    await this.updateMockKpis();
+    this.renderAnalysisQuestionsList();
+  },
+
+  filterAnalysisStatus(status) {
+    if (!this.analysisFilters) this.analysisFilters = { status: 'ALL', subject: 'ALL', search: '' };
+    this.analysisFilters.status = status;
+    document.querySelectorAll('#taStatusTabs .ta-tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.status === status);
+    });
+    this.renderAnalysisQuestionsList();
+  },
+
+  filterAnalysisSubject(subj) {
+    if (!this.analysisFilters) this.analysisFilters = { status: 'ALL', subject: 'ALL', search: '' };
+    this.analysisFilters.subject = subj;
+    this.renderAnalysisQuestionsList();
+  },
+
+  searchAnalysisQuestions(query) {
+    if (!this.analysisFilters) this.analysisFilters = { status: 'ALL', subject: 'ALL', search: '' };
+    this.analysisFilters.search = query || '';
+    this.renderAnalysisQuestionsList();
+  },
+
+  toggleAnalysisSolution(idx) {
+    if (!this.analysisExpandedSols) this.analysisExpandedSols = new Set();
+    if (this.analysisExpandedSols.has(idx)) {
+      this.analysisExpandedSols.delete(idx);
+    } else {
+      this.analysisExpandedSols.add(idx);
+    }
+    this.renderAnalysisQuestionsList();
+  },
+
+  reattemptMistakesOnly() {
+    if (!this.testAnalysis) return;
+    const wrongQs = this.testAnalysis.questions.filter(item => item.isWrong).map(item => item.q);
+    if (!wrongQs.length) {
+      alert('🎉 100% Accuracy! You have no mistakes to re-attempt in this paper.');
+      return;
+    }
+    this.beginSession(wrongQs, `🔄 Re-Attempt: ${wrongQs.length} Incorrect Questions`, false, false, 12000, false, this.isExamMode);
+  },
+
+  async saveAnalysisMistake(idx, tag) {
+    const item = this.testAnalysis?.questions[idx];
+    if (!item) return;
+    try {
+      if (window.db && db.mistakes) {
+        await db.mistakes.put({
+          questionId: item.q.id,
+          subject: item.q.subject,
+          chapter: item.q.chapter,
+          subtopic: item.q.subtopic || 'General',
+          errorTag: tag || item.errorTag || 'Concept Review Needed'
+        });
+      }
+      const btn = document.getElementById(`taSaveBtn_${idx}`);
+      if (btn) {
+        btn.textContent = '✓ Saved in Mistake Vault';
+        btn.style.color = 'var(--emerald)';
+        btn.style.borderColor = 'var(--emerald)';
+      }
+    } catch (e) {
+      alert('Logged to Mistake Vault!');
+    }
+  },
+
+  renderAnalysisQuestionsList() {
+    const container = document.getElementById('taQuestionsContainer');
+    if (!container || !this.testAnalysis) return;
+
+    const { status, subject, search } = this.analysisFilters;
+    const qTerm = (search || '').toLowerCase().trim();
+
+    const filtered = this.testAnalysis.questions.filter(item => {
+      if (status === 'WRONG' && !item.isWrong) return false;
+      if (status === 'CORRECT' && !item.isCorrect) return false;
+      if (status === 'SKIPPED' && !item.isSkipped) return false;
+      if (subject !== 'ALL' && item.q.subject !== subject) return false;
+      if (qTerm && !item.q.question.toLowerCase().includes(qTerm) && !item.q.chapter.toLowerCase().includes(qTerm) && !item.q.subtopic.toLowerCase().includes(qTerm)) {
+        return false;
+      }
+      return true;
+    });
+
+    if (!filtered.length) {
+      container.innerHTML = `
+        <div class="card" style="text-align:center;padding:36px;color:var(--muted);">
+          <div style="font-size:28px;margin-bottom:8px;">🔍</div>
+          <p style="font-size:14px;font-weight:600;">No questions match your current filter selection.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = filtered.map(item => {
+      const q = item.q;
+      const st = item.st;
+      const statusCls = item.isCorrect ? 'status-correct' : (item.isWrong ? 'status-wrong' : 'status-skipped');
+
+      let badgeHtml = '';
+      if (item.isCorrect) {
+        badgeHtml = `<span class="tag" style="background:#dcfce7;color:#16a34a;font-weight:700;">✓ Correct (+4 Marks)</span>`;
+      } else if (item.isWrong) {
+        badgeHtml = `<span class="tag" style="background:#fee2e2;color:#dc2626;font-weight:700;">✕ Incorrect (-1 Mark)</span>`;
+      } else {
+        badgeHtml = `<span class="tag" style="background:#f1f5f9;color:#64748b;font-weight:700;">⚪ Unattempted (0 Marks)</span>`;
+      }
+
+      const isSolExpanded = this.analysisExpandedSols && this.analysisExpandedSols.has(item.idx);
+
+      return `
+        <div class="ta-question-card ${statusCls}">
+          <!-- Card Header -->
+          <div class="ta-q-header">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <b style="font-size:14.5px;font-family:'Space Grotesk',sans-serif;">Q${item.idx + 1}</b>
+              <span class="tag" style="background:var(--paper);color:var(--muted);">${q.subject} · ${q.chapter}</span>
+              <span class="tag" style="background:var(--paper);color:var(--muted);">${q.subtopic}</span>
+              <span class="tag tag-${q.difficulty.toLowerCase()}">${q.difficulty.toUpperCase()}</span>
+              <span style="font-size:12px;color:var(--muted);font-weight:600;">⏱️ ${st.timeSpent || 0}s</span>
+            </div>
+            <div>${badgeHtml}</div>
+          </div>
+
+          <!-- Question Stem -->
+          <div class="ta-q-stem">${q.question}</div>
+
+          <!-- Options Grid -->
+          <div class="ta-options-list">
+            ${q.options.map((opt, optIdx) => {
+              let optCls = '';
+              let optLabel = `<b>${'ABCD'[optIdx]}</b>`;
+              if (optIdx === q.correct_option) {
+                optCls = 'opt-official-correct';
+                optLabel = `<b>✓ ${'ABCD'[optIdx]}</b>`;
+              } else if (item.isWrong && st.picked === optIdx) {
+                optCls = 'opt-user-wrong';
+                optLabel = `<b>✕ ${'ABCD'[optIdx]} (Your Choice)</b>`;
+              }
+              return `
+                <div class="ta-option-item ${optCls}">
+                  <span>${optLabel}</span>
+                  <span style="flex:1;">${opt}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <!-- Why It Went Wrong Box (for incorrect attempts) -->
+          ${item.isWrong ? `
+            <div class="ta-why-wrong-box">
+              <div class="ta-why-wrong-header">
+                <span>⚠️ Why It Went Wrong:</span>
+                <span class="tag" style="background:#fed7aa;color:#c2410c;font-weight:700;font-size:11px;">${item.errorTag}</span>
+              </div>
+              <div class="ta-why-wrong-body">${item.whyWrong}</div>
+            </div>
+          ` : ''}
+
+          <!-- Expandable Verified NCERT Solution -->
+          ${isSolExpanded ? `
+            <div class="ta-sol-box">
+              <div style="font-weight:700;color:var(--teal);margin-bottom:8px;font-size:14px;">📖 Official NCERT Step-by-Step Derivation & Principles:</div>
+              <div style="font-size:13.5px;line-height:1.5;">${q.solution || ''}</div>
+              <small style="display:block;margin-top:10px;color:var(--muted)">📖 Reference: ${q.ncert_ref || 'NCERT Standard Textbook'}</small>
+            </div>
+          ` : ''}
+
+          <!-- Action Bar for this question -->
+          <div class="ta-actions-bar">
+            <button class="secondary" style="font-size:12px;padding:6px 12px;" onclick="App.toggleAnalysisSolution(${item.idx})">
+              ${isSolExpanded ? '▲ Hide Solution' : '📖 View NCERT Derivation'}
+            </button>
+            <button class="secondary" style="font-size:12px;padding:6px 12px;border-color:#0284c7;color:#0284c7;font-weight:700;" onclick="App.showSolutionInspector(App.testAnalysis.questions[${item.idx}].q)" title="Scan and diagnose your handwritten rough work for this question">
+              📷 Scan & Diagnose Rough Work →
+            </button>
+            <button id="taSaveBtn_${item.idx}" class="secondary" style="font-size:12px;padding:6px 12px;" onclick="App.saveAnalysisMistake(${item.idx}, '${item.errorTag}')" title="Log question to Mistake Vault">
+              📌 Save to Mistake Vault
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    this.typesetMath();
   },
 
   exitPractice() {

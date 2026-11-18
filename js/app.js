@@ -444,6 +444,8 @@ Object.assign(window.App, {
       const diff = document.querySelector('input[name=difficulty]:checked').value;
       const status = document.getElementById('statusSelect').value;
       const count = Number(document.getElementById('countSelect').value) || 15;
+      const practiceMode = (document.getElementById('practiceModeSelect') || {}).value || 'instant';
+      const isExamMode = practiceMode === 'exam';
 
       let pool = [];
 
@@ -463,7 +465,7 @@ Object.assign(window.App, {
         this.hideLoading();
         const selected = this.shuffle(pool).slice(0, count);
         const title = chap !== 'ALL' ? (st !== 'ALL' ? `${chap} · ${st}` : chap) : (subj !== 'ALL' ? `${subj} Practice` : 'Custom Drill');
-        this.beginSession(selected, title, false, false);
+        this.beginSession(selected, title, false, false, 12000, false, isExamMode);
         return;
       }
 
@@ -507,7 +509,7 @@ Object.assign(window.App, {
 
       const selected = this.shuffle(finalPool).slice(0, count);
       const title = chap !== 'ALL' ? (st !== 'ALL' ? `${chap} · ${st}` : chap) : (subj !== 'ALL' ? `${subj} Practice` : 'Custom Drill');
-      this.beginSession(selected, title, false, false);
+      this.beginSession(selected, title, false, false, 12000, false, isExamMode);
     } catch (e) {
       this.hideLoading();
       console.error('startSubtopicDrill error:', e);
