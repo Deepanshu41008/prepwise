@@ -337,9 +337,9 @@ Object.assign(window.App, {
           errorTag: tag || 'Calculation Error'
         });
       }
-      alert(`✓ Question successfully logged into your Mistake Vault with tag: "${tag}"!`);
+      if (typeof alert === 'function') alert(`✓ Question successfully logged into your Mistake Vault with tag: "${tag}"!`);
     } catch (e) {
-      alert('Logged to Mistake Vault!');
+      if (typeof alert === 'function') alert('Logged to Mistake Vault!');
     }
   },
 
