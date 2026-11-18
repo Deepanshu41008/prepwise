@@ -2,15 +2,23 @@
 window.App = window.App || {};
 
 // IndexedDB Database Schema with Fast Compound Indexes
-window.db = new Dexie('Prepwise_DynamicCloud_DB');
-db.version(1).stores({
-  questions: 'id, classNum, subject, chapter, subtopic, difficulty, [classNum+subject], [subject+chapter], [chapter+subtopic]',
-  attempts: '++id, questionId, subject, chapter, subtopic, correct, timeSpent, quadrant, timestamp',
-  bookmarks: 'questionId, subject, chapter, subtopic',
-  mistakes: 'questionId, subject, chapter, subtopic, errorTag',
-  sessions: '++id, title, netMarks, maxMarks, accuracy, isMock, date',
-  meta: 'key'
-});
+try {
+  if (typeof Dexie !== 'undefined') {
+    window.db = new Dexie('Prepwise_DynamicCloud_DB');
+    db.version(1).stores({
+      questions: 'id, classNum, subject, chapter, subtopic, difficulty, [classNum+subject], [subject+chapter], [chapter+subtopic]',
+      attempts: '++id, questionId, subject, chapter, subtopic, correct, timeSpent, quadrant, timestamp',
+      bookmarks: 'questionId, subject, chapter, subtopic',
+      mistakes: 'questionId, subject, chapter, subtopic, errorTag',
+      sessions: '++id, title, netMarks, maxMarks, accuracy, isMock, date',
+      meta: 'key'
+    });
+  } else {
+    console.warn('Dexie library not found on window, fallback active');
+  }
+} catch (e) {
+  console.warn('Dexie DB setup notice:', e);
+}
 
 Object.assign(window.App, {
   updateBadgeCounts(count) {

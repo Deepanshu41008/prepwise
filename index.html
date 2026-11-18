@@ -1066,5 +1066,11 @@
 <script src="js/mocks.js"></script>
 <script src="js/analytics.js"></script>
 <script src="js/app.js"></script>
+<script>
+  // Immediate Boot Guarantee: Ensures content renders immediately upon script evaluation
+  if (window.App && typeof App.init === 'function') {
+    App.init().catch(function(e) { console.error('Immediate boot notice:', e); });
+  }
+</script>
 </body>
 </html>

@@ -26,35 +26,52 @@ Object.assign(window.App, {
 
   async init() {
     // 1. Instant boot: Read metadata hierarchy (< 5ms, 0 RAM overhead)
-    const metaObj = window.PREPWISE_HIERARCHY_META || {};
-    this.hierarchy = metaObj.classes || {};
+    let metaObj = window.PREPWISE_HIERARCHY_META;
+    if (!metaObj || !metaObj.classes || Object.keys(metaObj.classes).length === 0) {
+      try {
+        const res = await fetch('data/hierarchy_meta.json');
+        if (res.ok) {
+          metaObj = await res.json();
+          window.PREPWISE_HIERARCHY_META = metaObj;
+        }
+      } catch (e) {
+        console.warn('Hierarchy fetch fallback notice:', e);
+      }
+    }
+    this.hierarchy = (metaObj && metaObj.classes) ? metaObj.classes : {};
     this.renderDashboard();
     this.initCascadeDropdowns();
 
     // 2. Check IndexedDB question count and bank version on disk
     try {
-      const storedCount = await db.questions.count();
-      this.updateBadgeCounts(storedCount);
+      if (window.db && db.questions) {
+        const storedCount = await db.questions.count();
+        this.updateBadgeCounts(storedCount);
 
-      const CURRENT_VERSION = '2025_ULTIMA_V4_564K';
-      const versionRec = await db.meta.get('bank_version');
+        const CURRENT_VERSION = '2025_ULTIMA_V4_564K';
+        const versionRec = await db.meta.get('bank_version');
 
-      if (!versionRec || versionRec.version !== CURRENT_VERSION || storedCount === 0) {
-        // Upgrade or fresh run: clear previous stale questions and load new master bank
-        await db.questions.clear();
-        await this.ingestSeedPack();
-        await db.meta.put({ key: 'bank_version', version: CURRENT_VERSION });
-      } else {
-        if (window.PREPWISE_SEED_QUESTIONS) {
-          delete window.PREPWISE_SEED_QUESTIONS;
+        if (!versionRec || versionRec.version !== CURRENT_VERSION || storedCount === 0) {
+          // Upgrade or fresh run: clear previous stale questions and load new master bank
+          await db.questions.clear();
+          await this.ingestSeedPack();
+          await db.meta.put({ key: 'bank_version', version: CURRENT_VERSION });
+        } else {
+          if (window.PREPWISE_SEED_QUESTIONS) {
+            delete window.PREPWISE_SEED_QUESTIONS;
+          }
         }
       }
     } catch (e) {
       console.warn('Database boot notice:', e);
     }
 
-    await this.updateTopStats();
-    await this.updateMockKpis();
+    try {
+      await this.updateTopStats();
+      await this.updateMockKpis();
+    } catch (e) {
+      console.warn('Stats update notice:', e);
+    }
   },
 
   showLoading(msg = 'Preparing Questions... 🎯') {
@@ -272,6 +289,10 @@ Object.assign(window.App, {
 
   openSetup(cls, subj, chap) {
     this.showView('setup');
+    const classSel = document.getElementById('classSelect');
+    if (!classSel || !classSel.children.length) {
+      this.initCascadeDropdowns();
+    }
     if (cls) {
       document.getElementById('classSelect').value = cls;
       this.onClassChange();
@@ -830,5 +851,17 @@ Object.assign(window.App, {
 
 });
 
-// Boot the Application once DOM is fully parsed
-window.addEventListener('DOMContentLoaded', () => App.init());
+// Robust Application Boot Controller
+(function() {
+  function bootPrepwise() {
+    if (window.App && typeof App.init === 'function') {
+      App.init().catch(function(e) { console.error('App.init boot notice:', e); });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootPrepwise);
+  } else {
+    bootPrepwise();
+  }
+})();
