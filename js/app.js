@@ -69,6 +69,7 @@ Object.assign(window.App, {
     try {
       await this.updateTopStats();
       await this.updateMockKpis();
+      if (typeof this.initPlanner === 'function') this.initPlanner();
     } catch (e) {
       console.warn('Stats update notice:', e);
     }
@@ -541,7 +542,7 @@ Object.assign(window.App, {
   },
 
   showView(id) {
-    ['dashboard', 'setup', 'practice', 'streamerView', 'bookmarksView', 'mistakesView', 'progressView', 'growthBoardView', 'timedEndlessSetup', 'diagnosticsView', 'mocksHubView'].forEach(v => {
+    ['dashboard', 'setup', 'practice', 'streamerView', 'bookmarksView', 'mistakesView', 'progressView', 'growthBoardView', 'timedEndlessSetup', 'diagnosticsView', 'mocksHubView', 'flashcardsView', 'plannerView', 'solutionInspectorView'].forEach(v => {
       const el = document.getElementById(v);
       if (el) el.style.display = v === id ? 'block' : 'none';
     });

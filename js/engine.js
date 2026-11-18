@@ -416,12 +416,18 @@ Object.assign(window.App, {
                 <hr style="border:0;border-top:1px dashed #cbd5e1;margin:16px 0;">
                 <div style="font-weight:700;color:var(--teal);margin-bottom:8px;font-size:1.05rem;">📖 Complete Step-by-Step Derivation & Core Principle:</div>
                 <div>${q.solution || ''}</div>
+                <button class="secondary" style="margin-top:10px;width:100%;border-color:#0284c7;color:#0284c7;font-weight:700;" onclick="App.showSolutionInspector()" title="Upload or photograph your handwritten solution to see where you made a mistake">
+                  📷 Scan & Diagnose My Rough Work →
+                </button>
                 <button class="secondary" style="margin-top:12px;" onclick="App.toggleFullSolution()" title="Collapse Solution">▲ Collapse Full Solution</button>
               </div>
             ` : `
-              <div style="margin-top:14px;">
+              <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
                 <button class="primary" style="background:var(--teal);width:100%;font-weight:700;" onclick="App.toggleFullSolution()" title="Reveal Full Solution">
                   📖 Reveal Full Step-by-Step Solution & Derivation →
+                </button>
+                <button class="secondary" style="width:100%;border-color:#0284c7;color:#0284c7;font-weight:700;" onclick="App.showSolutionInspector()" title="Upload or photograph your handwritten solution to see where you made a mistake">
+                  📷 Scan & Diagnose My Rough Work →
                 </button>
               </div>
             `}

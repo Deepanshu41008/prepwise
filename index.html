@@ -14,6 +14,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script src="data/seed_meta.js"></script>
+<script src="data/flashcards_data.js"></script>
 <script defer src="data/seed_pack.js"></script>
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -37,8 +38,11 @@
       <button data-view="setup" onclick="App.openSetup()" title="Practice Specific Chapter & Subtopics"><i>🎯</i>Chapter Practice</button>
       <button data-view="mocksHubView" onclick="App.showMocksHub()" title="Full 720-Mark Mock Exams"><i>📝</i>Full Mock Tests</button>
       <button data-view="timedEndlessSetup" onclick="App.openTimedEndlessSetup()" title="Timed Multi-Topic Marathon"><i>⏱️</i>Timed Marathon</button>
+      <button data-view="flashcardsView" onclick="App.showFlashcards()" title="NCERT Formula & Concept Flashcards Deck"><i>🗂️</i>NCERT Flashcards</button>
+      <button data-view="solutionInspectorView" onclick="App.showSolutionInspector()" title="Scan & Diagnose Handwritten Rough Work"><i>📷</i>Solution Scanner</button>
 
-      <div class="nav-section-label" style="margin-top:14px">MY REVISION</div>
+      <div class="nav-section-label" style="margin-top:14px">TARGETS & REVISION</div>
+      <button data-view="plannerView" onclick="App.showPlanner()" title="NEET Countdown, Daily Targets & Study Streak"><i>🎯</i>Daily Target & Streak</button>
       <button data-view="growthBoardView" onclick="App.showGrowthBoard()" title="Track Your Accuracy, Speed & Scores"><i>📈</i>My Growth Board</button>
       <button data-view="mistakesView" onclick="App.showMistakes()" title="Review Questions You Got Wrong"><i>❌</i>My Mistakes <span id="navMistakeCount" class="nav-pill-badge" style="background:#fee2e2;color:#dc2626;display:none">0</span></button>
       <button data-view="bookmarksView" onclick="App.showBookmarks()" title="Questions You Starred"><i>⭐</i>Saved Questions</button>
@@ -157,6 +161,33 @@
                 <div class="ha-desc">Speed, accuracy & GMC qualification</div>
               </div>
               <div class="ha-cta">My Growth →</div>
+            </div>
+
+            <div class="hero-action-card" onclick="App.showFlashcards()">
+              <div>
+                <div class="ha-icon">🗂️</div>
+                <div class="ha-title">NCERT Flashcards</div>
+                <div class="ha-desc">735 formula & key concept flip-cards</div>
+              </div>
+              <div class="ha-cta">Start Flashcards →</div>
+            </div>
+
+            <div class="hero-action-card" onclick="App.showPlanner()">
+              <div>
+                <div class="ha-icon">🎯</div>
+                <div class="ha-title">Daily Planner & Streak</div>
+                <div class="ha-desc"><span id="miniCountdownDays">NEET 2026 Countdown</span> · Goal tracker</div>
+              </div>
+              <div class="ha-cta">My Schedule →</div>
+            </div>
+
+            <div class="hero-action-card" onclick="App.showSolutionInspector()">
+              <div>
+                <div class="ha-icon">📷</div>
+                <div class="ha-title">Solution Scanner</div>
+                <div class="ha-desc">Upload rough work to diagnose errors</div>
+              </div>
+              <div class="ha-cta">Scan Solution →</div>
             </div>
           </div>
         </section>
@@ -907,6 +938,338 @@
       </div>
     </section>
 
+    <!-- 11. NCERT FORMULA & CONCEPT FLASHCARDS VIEW -->
+    <section id="flashcardsView" style="display:none">
+      <div class="breadcrumb"><span class="crumb-link" onclick="App.showView('dashboard')">Home</span> / <span>NCERT Flashcards Deck</span></div>
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <button class="back-btn" onclick="App.showView('dashboard')"><i>←</i> Back to Home</button>
+          <div>
+            <div class="eyebrow">Interactive Spaced Repetition Revision</div>
+            <h1>NCERT Formula & Concept Flashcards</h1>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="secondary" onclick="App.shuffleFlashcards()" title="Shuffle Deck">🔀 Shuffle</button>
+          <button class="primary" onclick="App.applyFlashcardFilters()" title="Reset Filters">↻ Reset Deck</button>
+        </div>
+      </header>
+
+      <div class="fc-container">
+        <!-- Spaced Repetition KPIs -->
+        <div class="stats-grid" style="margin-bottom:16px;">
+          <div class="stat-pill" title="Total Flashcards in Deck">
+            <small>Total Deck</small><b id="fcTotalCount">735</b>
+          </div>
+          <div class="stat-pill" title="Mastered Cards" style="border-left:4px solid var(--emerald)">
+            <small>Mastered (★)</small><b id="fcMasteredCount" style="color:var(--emerald)">0</b>
+          </div>
+          <div class="stat-pill" title="Need Review Cards" style="border-left:4px solid var(--red)">
+            <small>Needs Review</small><b id="fcReviewCount" style="color:var(--red)">0</b>
+          </div>
+          <div class="stat-pill" title="Starred / Bookmarked Cards" style="border-left:4px solid #f59e0b">
+            <small>Starred Cards</small><b id="fcStarredCount" style="color:#f59e0b">0</b>
+          </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="fc-filter-panel">
+          <div class="fc-filter-row">
+            <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;">Class:</span>
+            <button class="pill-btn fc-class-btn active" data-cls="ALL" onclick="App.setFcClass('ALL')">All Classes</button>
+            <button class="pill-btn fc-class-btn" data-cls="11" onclick="App.setFcClass('11')">Class 11</button>
+            <button class="pill-btn fc-class-btn" data-cls="12" onclick="App.setFcClass('12')">Class 12</button>
+          </div>
+
+          <div class="fc-filter-row">
+            <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;">Subject:</span>
+            <button class="pill-btn fc-subj-btn active" data-subj="ALL" onclick="App.setFcSubj('ALL')">All Subjects</button>
+            <button class="pill-btn fc-subj-btn" data-subj="Physics" onclick="App.setFcSubj('Physics')">⚛️ Physics</button>
+            <button class="pill-btn fc-subj-btn" data-subj="Chemistry" onclick="App.setFcSubj('Chemistry')">🧪 Chemistry</button>
+            <button class="pill-btn fc-subj-btn" data-subj="Botany" onclick="App.setFcSubj('Botany')">🌿 Botany</button>
+            <button class="pill-btn fc-subj-btn" data-subj="Zoology" onclick="App.setFcSubj('Zoology')">🧬 Zoology</button>
+          </div>
+
+          <div class="fc-filter-row">
+            <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;">Chapter:</span>
+            <select id="fcChapSelect" onchange="App.onFcChapChange(this.value)" style="flex:1;min-width:220px;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--paper);font-size:13px;"></select>
+          </div>
+
+          <div class="fc-filter-row">
+            <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;">Deck Filter:</span>
+            <button class="pill-btn fc-status-btn active" data-status="ALL" onclick="App.setFcStatus('ALL')">All Cards</button>
+            <button class="pill-btn fc-status-btn" data-status="review" onclick="App.setFcStatus('review')">⚠️ Needs Review</button>
+            <button class="pill-btn fc-status-btn" data-status="starred" onclick="App.setFcStatus('starred')">⭐ Starred Only</button>
+            <button class="pill-btn fc-status-btn" data-status="mastered" onclick="App.setFcStatus('mastered')">✓ Mastered</button>
+          </div>
+        </div>
+
+        <!-- Progress and Counter -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px;color:var(--muted);font-weight:700;">
+          <span id="fcCounter">1 / 735</span>
+          <button id="fcStarBtn" class="pill-btn" onclick="App.toggleStarFlashcard()" style="border:none;background:transparent;cursor:pointer;font-size:13px;">☆ Star Card</button>
+        </div>
+        <div class="bar" style="height:6px;margin-bottom:16px;"><div id="fcProgressBar" class="bar-fill" style="width:1%;"></div></div>
+
+        <!-- 3D Flashcard Viewport -->
+        <div class="fc-card-viewport">
+          <div id="flashcardElement" class="flashcard" onclick="App.flipFlashcard()">
+            <!-- Front Face -->
+            <div class="flashcard-face flashcard-front">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <span id="fcFrontSubj" class="tag tag-physics">Physics</span>
+                  <span id="fcFrontClass" class="tag" style="background:var(--paper);color:var(--muted);">Class 11</span>
+                </div>
+                <small style="color:var(--muted);font-weight:600;">Tap to Flip ↻</small>
+              </div>
+              <div class="fc-content">
+                <div id="fcFrontText" style="font-size:18px;font-weight:600;">Loading flashcard...</div>
+              </div>
+              <div style="font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;">
+                <span id="fcFrontChap">—</span>
+              </div>
+            </div>
+
+            <!-- Back Face -->
+            <div class="flashcard-face flashcard-back">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span id="fcBackSubj" class="tag" style="background:#e0f2fe;color:#0369a1;">High Yield Takeaway</span>
+                <small style="color:var(--muted);font-weight:600;">Tap to Flip ↻</small>
+              </div>
+              <div class="fc-content" style="font-size:15px;">
+                <div id="fcBackText">Answer explanation</div>
+                <div id="fcBackMnemonic" class="fc-mnemonic-box" style="display:none;"></div>
+                <div id="fcBackTrap" class="fc-trap-box" style="display:none;"></div>
+              </div>
+              <div style="font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;">
+                <span>Verified against NCERT Standard Textbook</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="fcEmptyState" class="card" style="display:none;text-align:center;padding:40px;">
+            <h3>No Flashcards Matched Your Filter</h3>
+            <p style="color:var(--muted);font-size:13px;">Try switching to "All Subjects" or "All Cards" to explore the deck.</p>
+            <button class="primary" onclick="App.setFcStatus('ALL');App.setFcSubj('ALL');" style="margin-top:12px;">Reset Filters</button>
+          </div>
+        </div>
+
+        <!-- Rating Buttons -->
+        <div class="fc-rating-buttons">
+          <button class="fc-btn-review" onclick="App.markFlashcard('review')" title="Mark as Need Review">⚠️ Need Review</button>
+          <button class="secondary" onclick="App.flipFlashcard()" style="flex:1;padding:12px;font-weight:700;">🔄 Flip Card</button>
+          <button class="fc-btn-mastered" onclick="App.markFlashcard('mastered')" title="Mark as Mastered">✓ Got It Right!</button>
+        </div>
+
+        <!-- Navigation bar -->
+        <div class="fc-controls-bar" style="margin-top:16px;">
+          <button class="secondary" onclick="App.prevFlashcard()" style="min-width:120px;">← Previous</button>
+          <small style="color:var(--muted);">Pro Tip: Press Spacebar to Flip · Arrow keys to Navigate</small>
+          <button class="secondary" onclick="App.nextFlashcard()" style="min-width:120px;">Next →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12. DAILY TARGET & STUDY STREAK PLANNER VIEW -->
+    <section id="plannerView" style="display:none">
+      <div class="breadcrumb"><span class="crumb-link" onclick="App.showView('dashboard')">Home</span> / <span>Target NEET Planner</span></div>
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <button class="back-btn" onclick="App.showView('dashboard')"><i>←</i> Back to Home</button>
+          <div>
+            <div class="eyebrow">Study Consistency Engine</div>
+            <h1>Target NEET 2026 / 2027 Study Planner</h1>
+          </div>
+        </div>
+      </header>
+
+      <div class="planner-layout">
+        <!-- Live Countdown Clock -->
+        <div class="countdown-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span class="tag" style="background:rgba(255,255,255,0.25);color:var(--white);font-weight:800;">TARGET NEET-UG</span>
+            <small style="color:rgba(255,255,255,0.85);font-weight:600;">Exam Target: May 2026</small>
+          </div>
+          <h2 style="margin:12px 0 4px 0;font:700 24px 'Space Grotesk';color:var(--white);">NEET Countdown</h2>
+          <p style="color:rgba(255,255,255,0.85);font-size:13px;margin:0;">Time remaining until the National Testing Agency medical entrance hall opens.</p>
+
+          <div class="countdown-clock">
+            <div class="clock-digit-box">
+              <b id="cdDays">00</b>
+              <small>Days</small>
+            </div>
+            <div class="clock-digit-box">
+              <b id="cdHours">00</b>
+              <small>Hours</small>
+            </div>
+            <div class="clock-digit-box">
+              <b id="cdMins">00</b>
+              <small>Mins</small>
+            </div>
+            <div class="clock-digit-box">
+              <b id="cdSecs">00</b>
+              <small>Secs</small>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <span style="font-size:12px;opacity:0.9;">Target Year:</span>
+            <div style="display:flex;gap:6px;">
+              <button class="pill-btn" onclick="App.setExamDate('2026-05-03')" style="background:rgba(255,255,255,0.2);color:var(--white);border:none;font-size:12px;">NEET 2026</button>
+              <button class="pill-btn" onclick="App.setExamDate('2027-05-02')" style="background:rgba(255,255,255,0.2);color:var(--white);border:none;font-size:12px;">NEET 2027 (Class 11)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily Target & SVG Progress Ring -->
+        <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;">
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="tag" style="background:var(--mint);color:var(--teal);">DAILY GOAL</span>
+              <span style="font-size:12px;font-weight:700;color:var(--muted);">Streak: <b id="plannerStreakVal" style="color:#ea580c">0 Days</b> 🔥</span>
+            </div>
+            <h2 style="margin:10px 0 4px 0;font:700 22px 'Space Grotesk'">Today's Questions Goal</h2>
+            <p style="color:var(--muted);font-size:13px;margin:0;">Consistent daily practice is the #1 predictor of 650+ NEET scores.</p>
+
+            <div class="target-ring-wrapper">
+              <div style="position:relative;width:124px;height:124px;">
+                <svg class="ring-svg" viewBox="0 0 128 128">
+                  <circle class="ring-bg" cx="64" cy="64" r="54" />
+                  <circle id="targetRingCircle" class="ring-fill" cx="64" cy="64" r="54" />
+                </svg>
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+                  <b id="targetRingText" style="font:800 18px 'JetBrains Mono';color:var(--teal)">0 / 50</b>
+                  <small style="font-size:10px;color:var(--muted)">SOLVED</small>
+                </div>
+              </div>
+
+              <div style="flex:1;">
+                <div id="targetRingSub" style="font-weight:700;font-size:14px;color:var(--ink);margin-bottom:8px;">0% of Daily Goal</div>
+                <small style="color:var(--muted);display:block;margin-bottom:8px;">Set target pace:</small>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <button class="pill-btn target-pill-btn" data-target="30" onclick="App.setDailyTarget(30)">30 Qs</button>
+                  <button class="pill-btn target-pill-btn active" data-target="50" onclick="App.setDailyTarget(50)">50 Qs</button>
+                  <button class="pill-btn target-pill-btn" data-target="80" onclick="App.setDailyTarget(80)">80 Qs</button>
+                  <button class="pill-btn target-pill-btn" data-target="100" onclick="App.setDailyTarget(100)">100 Qs</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
+            <button class="primary" style="width:100%;font-size:13px;" onclick="App.openSetup()">▶ Start Practice toward Daily Goal →</button>
+          </div>
+        </div>
+
+        <!-- 30-Day Activity Heatmap -->
+        <div class="card" style="grid-column:1/-1;">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div>
+              <h3 style="margin:0 0 4px 0;font-size:16px;">30-Day Practice Activity Grid</h3>
+              <p style="color:var(--muted);font-size:12px;margin:0;">Green tiles indicate days with completed practice sessions and mock tests.</p>
+            </div>
+            <div style="display:flex;gap:4px;align-items:center;font-size:11px;color:var(--muted);">
+              <span>Less</span>
+              <span class="cal-tile lvl-0" style="width:14px;height:14px;"></span>
+              <span class="cal-tile lvl-1" style="width:14px;height:14px;"></span>
+              <span class="cal-tile lvl-2" style="width:14px;height:14px;"></span>
+              <span class="cal-tile lvl-3" style="width:14px;height:14px;"></span>
+              <span class="cal-tile lvl-4" style="width:14px;height:14px;"></span>
+              <span>More</span>
+            </div>
+          </div>
+          <div id="activityCalendarGrid" class="activity-cal-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 13. SOLUTION SCANNER & DIAGNOSTIC INSPECTOR VIEW -->
+    <section id="solutionInspectorView" style="display:none">
+      <div class="breadcrumb"><span class="crumb-link" onclick="App.showView('dashboard')">Home</span> / <span>Handwritten Solution Scanner</span></div>
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <button class="back-btn" onclick="App.showView('dashboard')"><i>←</i> Back to Home</button>
+          <div>
+            <div class="eyebrow">Step-by-Step Diagnostic Inspector</div>
+            <h1>Handwritten Solution Scanner & Error Pinpointer</h1>
+          </div>
+        </div>
+      </header>
+
+      <div class="inspector-layout">
+        <!-- Target Question Context -->
+        <div class="card" style="margin-bottom:18px;border-left:4px solid var(--teal);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span id="inspectorTargetMeta" class="tag tag-physics">Physics · Kinematics (Projectile Motion)</span>
+            <small style="color:var(--muted)">Target Question Under Inspection</small>
+          </div>
+          <div id="inspectorTargetStem" style="font-size:15px;font-weight:600;color:var(--ink);">
+            A projectile is fired at an angle of 30° to the horizontal with an initial velocity of 40 m/s. What is its horizontal range? (Take g = 10 m/s²)
+          </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap:18px; margin-bottom:18px;">
+          <!-- Upload & Camera Box -->
+          <div class="card">
+            <h3 style="margin:0 0 6px 0;font-size:16px;">1. Upload Your Rough Work</h3>
+            <p style="color:var(--muted);font-size:12.5px;margin-bottom:14px;">Snap a photo of your notebook calculation or upload an image file.</p>
+
+            <label class="inspector-dropzone" for="inspectorFileInput">
+              <div style="font-size:32px;margin-bottom:6px;">📷</div>
+              <div style="font-weight:700;font-size:14px;color:var(--teal)">Click to Snap Photo or Upload Rough Sheet</div>
+              <small style="color:var(--muted);display:block;margin-top:4px;">Supports PNG, JPG, WEBP, or Camera Capture</small>
+              <input type="file" id="inspectorFileInput" accept="image/*" capture="environment" style="display:none" onchange="App.handleSolutionUpload(this)">
+            </label>
+
+            <!-- Image Preview Canvas -->
+            <div style="margin-top:14px;">
+              <img id="inspectorImagePreview" src="" style="display:none;width:100%;border-radius:10px;border:1px solid var(--line);">
+              <canvas id="inspectorCanvas" style="display:none;width:100%;border-radius:10px;border:1px solid var(--line);"></canvas>
+            </div>
+
+            <div style="margin-top:12px;display:flex;gap:8px;">
+              <button class="secondary" style="flex:1;font-size:12px;" onclick="App.enhanceImageContrast()">✨ Enhance Handwriting Contrast</button>
+            </div>
+          </div>
+
+          <!-- Typed Work or Sample Demos -->
+          <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;">
+            <div>
+              <h3 style="margin:0 0 6px 0;font-size:16px;">2. Or Type / Paste Your Steps</h3>
+              <p style="color:var(--muted);font-size:12.5px;margin-bottom:10px;">Type formulas or intermediate values to compare with verified NCERT derivation.</p>
+
+              <textarea id="inspectorTextWork" placeholder="e.g.&#10;Given: u = 40, theta = 30, g = 10&#10;Formula: R = (u^2 * sin(theta)) / g&#10;Step 1: R = (1600 * 0.5) / 10&#10;Step 2: R = 80 m&#10;Selected Option: B" style="width:100%;height:130px;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--paper);font-family:'JetBrains Mono',monospace;font-size:12px;box-sizing:border-box;resize:vertical;"></textarea>
+
+              <div style="margin-top:8px;">
+                <small style="color:var(--muted);font-weight:700;display:block;margin-bottom:4px;">Test with Pre-loaded Demo Errors:</small>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <button class="pill-btn" onclick="App.loadDemoScratchpad('kinematics')" style="font-size:11px;">Physics Trap Demo</button>
+                  <button class="pill-btn" onclick="App.loadDemoScratchpad('chemistry')" style="font-size:11px;">Chem Unit Slip Demo</button>
+                  <button class="pill-btn" onclick="App.loadDemoScratchpad('genetics')" style="font-size:11px;">Genetics Ratio Demo</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:14px;">
+              <button class="primary" style="width:100%;font-size:13px;padding:12px;" onclick="App.runAutomatedDiagnosticScan('rough_sheet')">
+                🔍 Run Step-by-Step Diagnostic Check →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status & Diagnostic Output Area -->
+        <div id="inspectorStatus" style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:14px;text-align:center;">
+          Upload or photograph your handwritten solution to analyze.
+        </div>
+
+        <div id="inspectorReportArea" style="display:none;">
+          <!-- Dynamically populated step cards -->
+        </div>
+      </div>
+    </section>
+
 
     <!-- TIMED MARATHON SUMMARY MODAL -->
     <div id="timedEndlessSummaryModal" class="modal-overlay" style="display:none">
@@ -1065,6 +1428,9 @@
 <script src="js/engine.js"></script>
 <script src="js/mocks.js"></script>
 <script src="js/analytics.js"></script>
+<script src="js/flashcards.js"></script>
+<script src="js/planner.js"></script>
+<script src="js/inspector.js"></script>
 <script src="js/app.js"></script>
 <script>
   // Immediate Boot Guarantee: Ensures content renders immediately upon script evaluation
