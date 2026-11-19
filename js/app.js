@@ -550,7 +550,9 @@ Object.assign(window.App, {
     if (attEl) attEl.textContent = attempts.length;
     if (accEl) accEl.textContent = attempts.length ? `${Math.round((correct / attempts.length) * 100)}%` : '—';
     if (negEl) negEl.textContent = wrong > 0 ? `-${wrong}` : '0';
-    if (scoreEl) scoreEl.textContent = attempts.length ? `${netMarks} pts` : '0 pts';
+    // Cumulative points floor at 0 (never display negative lifetime points)
+    const displayNetScore = Math.max(0, netMarks);
+    if (scoreEl) scoreEl.textContent = attempts.length ? `${displayNetScore} pts` : '0 pts';
     if (barEl) barEl.style.width = `${Math.min(100, attempts.length * 2)}%`;
 
     if (typeof this.updateMistakeBadge === 'function') {

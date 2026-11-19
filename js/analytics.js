@@ -63,8 +63,9 @@ Object.assign(window.App, {
     if (elCor) elCor.textContent = correctAttempts.toLocaleString();
     const elWrg = document.getElementById('gbWrongCount');
     if (elWrg) elWrg.textContent = wrongAttempts.toLocaleString();
+    const displayNet = Math.max(0, netMarks);
     const elNet = document.getElementById('gbNetScore');
-    if (elNet) elNet.textContent = `${netMarks.toLocaleString()} pts`;
+    if (elNet) elNet.textContent = `${displayNet.toLocaleString()} pts`;
     const elAvg = document.getElementById('gbAvgTime');
     if (elAvg) elAvg.textContent = totalAttempts ? `${avgTimeOverall}s / Q` : '— s/Q';
     const elNeg = document.getElementById('gbNegBleed');

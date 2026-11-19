@@ -235,9 +235,12 @@
             </div>
           </div>
 
-          <div class="scorecard-footer-action">
+          <div class="scorecard-footer-action" style="display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;">
             <button class="secondary scorecard-mistakes-btn" onclick="App.showMistakes()" title="Review questions you got wrong">
               ❌ Review My Mistakes Vault →
+            </button>
+            <button class="secondary" style="font-size:12px;padding:6px 12px;color:var(--muted);border-color:var(--line);" onclick="App.resetScorecardProgress()" title="Reset practice scorecard statistics to 0">
+              🔄 Reset Scorecard
             </button>
           </div>
         </section>
