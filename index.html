@@ -80,18 +80,18 @@
     <section id="dashboard">
       <header class="topbar">
         <div>
-          <div class="eyebrow" title="NEET-UG Command Hub">🩺 NEET-UG 2025 / 2026 PREPARATION HUB</div>
-          <h1 title="Welcome">Welcome, Future Doctor! 👋</h1>
+          <div class="eyebrow" title="PrepWise Practice Hub">🌱 PRACTICE & MASTERY HUB</div>
+          <h1 title="Welcome">Welcome Back! 👋</h1>
         </div>
         <div class="topbar-badge">
-          <span class="tag" style="background:var(--mint);color:var(--teal);font-weight:700;font-size:12.5px;padding:6px 14px;border-radius:20px;">Target: 680+ GMC</span>
+          <span class="tag" style="background:var(--mint);color:var(--teal);font-weight:700;font-size:12.5px;padding:6px 14px;border-radius:20px;">Mastery Mode</span>
         </div>
       </header>
 
       <!-- 3-STEP STUDENT HOW-IT-WORKS BANNER -->
       <div class="how-it-works-banner">
         <div class="how-it-works-header">
-          <div style="font:700 14px 'Space Grotesk';color:var(--teal);letter-spacing:0.5px;">💡 HOW TO CRACK NEET WITH PREPWISE</div>
+          <div style="font:700 14px 'Space Grotesk';color:var(--teal);letter-spacing:0.5px;">💡 HOW PREPWISE HELPS YOU MASTER CONCEPTS</div>
           <span style="font-size:12px;color:var(--muted);font-weight:600;">3 Easy Steps</span>
         </div>
         <div class="how-steps-grid">
@@ -112,8 +112,8 @@
           <div class="how-step">
             <span class="how-step-icon">❌</span>
             <div>
-              <div class="how-step-title">3. Fix Mistakes in Growth Board</div>
-              <div class="how-step-desc">Wrong questions are saved to your Mistake Vault with full NCERT solutions!</div>
+              <div class="how-step-title">3. Fix Weak Points in Vault</div>
+              <div class="how-step-desc">Wrong questions are saved to your Mistake Vault with full step-by-step solutions!</div>
             </div>
           </div>
         </div>
@@ -122,8 +122,8 @@
       <div class="grid">
         <section class="hero">
           <div class="eyebrow" style="color:#ccfbf1">81 Chapters · 705 Micro-Topics · 564,000 Authentic Questions</div>
-          <h2>Master every NCERT concept for NEET-UG</h2>
-          <p>Practice authentic questions with step-by-step NCERT solutions, progressive hints, timed marathons, and official NTA examination hall mocks.</p>
+          <h2>Master Concepts at Your Own Pace</h2>
+          <p>Practice authentic questions with step-by-step solutions, identify your weak points automatically, and strengthen your core concepts.</p>
           
           <div class="hero-action-grid">
             <div class="hero-action-card" onclick="App.openTimedEndlessSetup()">
@@ -157,7 +157,7 @@
               <div>
                 <div class="ha-icon">📈</div>
                 <div class="ha-title">Growth Board</div>
-                <div class="ha-desc">Speed, accuracy & GMC qualification</div>
+                <div class="ha-desc">Speed, accuracy & concept mastery</div>
               </div>
               <div class="ha-cta">My Growth →</div>
             </div>
@@ -175,7 +175,7 @@
               <div>
                 <div class="ha-icon">🎯</div>
                 <div class="ha-title">Daily Planner & Streak</div>
-                <div class="ha-desc"><span id="miniCountdownDays">NEET 2026 Countdown</span> · Goal tracker</div>
+                <div class="ha-desc"><span id="miniCountdownDays">Schedule Tracker</span> · Goal tracker</div>
               </div>
               <div class="ha-cta">My Schedule →</div>
             </div>
@@ -185,15 +185,15 @@
         <section class="panel scorecard-panel">
           <div class="scorecard-header">
             <div class="scorecard-title-group">
-              <span class="scorecard-badge">📊 NEET-UG READINESS RADAR</span>
+              <span class="scorecard-badge">🎯 PRACTICE & WEAK POINTS RADAR</span>
             </div>
             <div style="display:flex;gap:8px;align-items:center;">
               <span class="scorecard-scale-tag" id="scColdStartBadge">🌱 Initializing</span>
-              <span class="scorecard-scale-tag" style="background:#f0fdfa;border-color:#99f6e4;color:var(--teal);font-weight:700;">NTA 720 Scale</span>
+              <span class="scorecard-scale-tag" style="background:#f0fdfa;border-color:#99f6e4;color:var(--teal);font-weight:700;">Weak Spot Diagnostic</span>
             </div>
           </div>
 
-          <!-- LeetCode-Inspired Mastery Hero: Solved Ring + 3-Subject NTA Balance (Physics, Chemistry, Biology) -->
+          <!-- LeetCode-Inspired Mastery Hero: Solved Overview + 3-Subject Progress (Biology, Chemistry, Physics) -->
           <div class="scorecard-lc-hero">
             <div class="sc-lc-left">
               <div class="sc-lc-solved-number" id="scSolvedCount">0</div>
@@ -205,7 +205,7 @@
               <div class="sc-lc-bar-item">
                 <div class="sc-lc-bar-header">
                   <span>🌿 Biology (Botany + Zoology)</span>
-                  <b id="scBioVal">0 / 360 pts</b>
+                  <b id="scBioVal">0 Solved</b>
                 </div>
                 <div class="sc-lc-track"><div class="sc-lc-fill sc-fill-bio" id="scBioBar" style="width:0%"></div></div>
               </div>
@@ -213,7 +213,7 @@
               <div class="sc-lc-bar-item">
                 <div class="sc-lc-bar-header">
                   <span>⚗️ Chemistry (Inorg + Org + Phys)</span>
-                  <b id="scChemVal">0 / 180 pts</b>
+                  <b id="scChemVal">0 Solved</b>
                 </div>
                 <div class="sc-lc-track"><div class="sc-lc-fill sc-fill-chem" id="scChemBar" style="width:0%"></div></div>
               </div>
@@ -221,11 +221,16 @@
               <div class="sc-lc-bar-item">
                 <div class="sc-lc-bar-header">
                   <span>⚛️ Physics (Mechanics + Electrodynamics)</span>
-                  <b id="scPhyVal">0 / 180 pts</b>
+                  <b id="scPhyVal">0 Solved</b>
                 </div>
                 <div class="sc-lc-track"><div class="sc-lc-fill sc-fill-phy" id="scPhyBar" style="width:0%"></div></div>
               </div>
             </div>
+          </div>
+
+          <!-- DEDICATED WEAK POINTS CONTAINER (SHOWING USER WEAK POINTS CLEARLY) -->
+          <div class="sc-weak-spots-card" id="scWeakSpotsContainer">
+            <!-- Dynamically populated in App.updateTopStats() -->
           </div>
 
           <!-- Key Diagnostic Indicators Row -->
@@ -237,7 +242,7 @@
                 <b id="accuracy">—</b>
               </div>
             </div>
-            <div class="stat-pill stat-pill-pacing" title="Average seconds spent per question (Target: &lt;60s)">
+            <div class="stat-pill stat-pill-pacing" title="Average seconds spent per question">
               <div class="stat-pill-icon">⏱️</div>
               <div class="stat-pill-info">
                 <small>Average Pace</small>
@@ -251,10 +256,10 @@
                 <b id="scVaultStatus" style="color:var(--emerald)">Clean Sheet</b>
               </div>
             </div>
-            <div class="stat-pill stat-pill-bank" title="Curated Offline NCERT Question Bank">
+            <div class="stat-pill stat-pill-bank" title="Curated Offline Question Bank">
               <div class="stat-pill-icon">📚</div>
               <div class="stat-pill-info">
-                <small>NCERT Bank</small>
+                <small>Question Bank</small>
                 <b>5.64L Qs</b>
               </div>
             </div>
@@ -271,7 +276,7 @@
               ❌ Review My Mistakes Vault →
             </button>
             <button class="secondary" style="font-size:12px;padding:9px 14px;color:var(--muted);border-color:var(--line);" onclick="App.resetScorecardProgress()" title="Reset practice scorecard statistics to 0">
-              🔄 Reset Scorecard
+              🔄 Reset Practice Stats
             </button>
           </div>
         </section>

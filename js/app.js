@@ -543,7 +543,7 @@ Object.assign(window.App, {
     const totalWrong = totalAttempted - totalCorrect;
     const netMarks = Math.max(0, (totalCorrect * 4) - totalWrong);
 
-    // 1. Subject Breakdown for NTA 720 Balance (Biology 360, Chemistry 180, Physics 180)
+    // 1. Subject Breakdown (Questions Solved per Subject)
     let bioCorrect = 0, chemCorrect = 0, phyCorrect = 0;
     let bioTotal = 0, chemTotal = 0, phyTotal = 0;
     let totalTime = 0;
@@ -565,33 +565,30 @@ Object.assign(window.App, {
       }
     });
 
-    // 2. Populate LeetCode Hero Elements
+    // 2. Populate Solved Overview Elements
     const elSolved = document.getElementById('scSolvedCount');
     if (elSolved) elSolved.textContent = totalCorrect;
 
     const elAttempted = document.getElementById('scAttemptedCount');
     if (elAttempted) elAttempted.textContent = totalAttempted;
 
-    // Biology Bar (Max 360)
-    const bioScore = Math.max(0, Math.min(360, (bioCorrect * 4) - Math.max(0, bioTotal - bioCorrect)));
+    // Biology Bar (Solved / Attempted)
     const elBioVal = document.getElementById('scBioVal');
-    if (elBioVal) elBioVal.textContent = `${bioScore} / 360 pts`;
+    if (elBioVal) elBioVal.textContent = bioTotal > 0 ? `${bioCorrect} Solved (${bioTotal} Qs)` : '0 Solved';
     const elBioBar = document.getElementById('scBioBar');
-    if (elBioBar) elBioBar.style.width = `${Math.min(100, Math.round((bioScore / 360) * 100))}%`;
+    if (elBioBar) elBioBar.style.width = `${bioTotal > 0 ? Math.min(100, Math.round((bioCorrect / bioTotal) * 100)) : 0}%`;
 
-    // Chemistry Bar (Max 180)
-    const chemScore = Math.max(0, Math.min(180, (chemCorrect * 4) - Math.max(0, chemTotal - chemCorrect)));
+    // Chemistry Bar (Solved / Attempted)
     const elChemVal = document.getElementById('scChemVal');
-    if (elChemVal) elChemVal.textContent = `${chemScore} / 180 pts`;
+    if (elChemVal) elChemVal.textContent = chemTotal > 0 ? `${chemCorrect} Solved (${chemTotal} Qs)` : '0 Solved';
     const elChemBar = document.getElementById('scChemBar');
-    if (elChemBar) elChemBar.style.width = `${Math.min(100, Math.round((chemScore / 180) * 100))}%`;
+    if (elChemBar) elChemBar.style.width = `${chemTotal > 0 ? Math.min(100, Math.round((chemCorrect / chemTotal) * 100)) : 0}%`;
 
-    // Physics Bar (Max 180)
-    const phyScore = Math.max(0, Math.min(180, (phyCorrect * 4) - Math.max(0, phyTotal - phyCorrect)));
+    // Physics Bar (Solved / Attempted)
     const elPhyVal = document.getElementById('scPhyVal');
-    if (elPhyVal) elPhyVal.textContent = `${phyScore} / 180 pts`;
+    if (elPhyVal) elPhyVal.textContent = phyTotal > 0 ? `${phyCorrect} Solved (${phyTotal} Qs)` : '0 Solved';
     const elPhyBar = document.getElementById('scPhyBar');
-    if (elPhyBar) elPhyBar.style.width = `${Math.min(100, Math.round((phyScore / 180) * 100))}%`;
+    if (elPhyBar) elPhyBar.style.width = `${phyTotal > 0 ? Math.min(100, Math.round((phyCorrect / phyTotal) * 100)) : 0}%`;
 
     // 3. Accuracy with Cold-Start Protection (< 5 Qs)
     const accEl = document.getElementById('accuracy');
@@ -623,11 +620,13 @@ Object.assign(window.App, {
       }
     }
 
-    // 5. Mistake Vault Health Shield (Live 1:1 Sync with Active Mistakes!)
+    // 5. Mistake Vault Status (Live 1:1 Sync with Active Mistakes!)
     let activeMistakesCount = 0;
-    if (window.db && db.mistakes && typeof db.mistakes.count === 'function') {
+    let mistakesList = [];
+    if (window.db && db.mistakes && typeof db.mistakes.toArray === 'function') {
       try {
-        activeMistakesCount = await db.mistakes.count();
+        mistakesList = await db.mistakes.toArray();
+        activeMistakesCount = mistakesList.length;
       } catch (e) {}
     }
 
@@ -642,24 +641,160 @@ Object.assign(window.App, {
         vStatus.style.color = 'var(--emerald)';
       }
       if (vCta) {
-        vCta.innerHTML = '🛡️ Mistake Vault: Clean Sheet (0 Leaks) →';
+        vCta.innerHTML = '🛡️ Mistake Vault: Clean Sheet (0 Mistakes) →';
         vCta.style.borderColor = 'var(--line)';
         vCta.style.color = 'var(--ink)';
       }
     } else {
       if (vIcon) vIcon.textContent = '⚠️';
       if (vStatus) {
-        vStatus.textContent = `${activeMistakesCount} Traps Risk`;
-        vStatus.style.color = 'var(--red)';
+        vStatus.textContent = `${activeMistakesCount} to Review`;
+        vStatus.style.color = '#d97706';
       }
       if (vCta) {
-        vCta.innerHTML = `⚠️ Fix ${activeMistakesCount} Mistakes in Vault (-${activeMistakesCount * 5} Marks Risk) →`;
-        vCta.style.borderColor = '#fca5a5';
-        vCta.style.color = '#dc2626';
+        vCta.innerHTML = `❌ Review ${activeMistakesCount} Mistake${activeMistakesCount > 1 ? 's' : ''} in Vault →`;
+        vCta.style.borderColor = '#fde68a';
+        vCta.style.color = '#92400e';
       }
     }
 
-    // 6. Backward-compatibility elements
+    // 6. Dynamic Weak Points Detection & Interactive Display
+    const weakSpotsContainer = document.getElementById('scWeakSpotsContainer');
+    if (weakSpotsContainer) {
+      if (totalAttempted === 0) {
+        weakSpotsContainer.innerHTML = `
+          <div class="sc-weak-box sc-weak-empty-state">
+            <div class="sc-weak-icon">🌱</div>
+            <div class="sc-weak-empty-text">
+              <b>Start practicing to detect your weak points</b>
+              <p>As you solve questions, topics where you stumble or make errors will appear here automatically with instant practice drills.</p>
+            </div>
+          </div>
+        `;
+      } else {
+        // Group active mistakes by chapter & subtopic
+        const weakMap = {};
+        mistakesList.forEach(m => {
+          const ch = m.chapter || 'General';
+          const st = m.subtopic || 'General Concept';
+          const sub = m.subject || 'Practice';
+          const key = `${sub}:::${ch}:::${st}`;
+          if (!weakMap[key]) {
+            weakMap[key] = {
+              subject: sub,
+              chapter: ch,
+              subtopic: st,
+              mistakeCount: 0,
+              tags: {},
+              attempts: 0,
+              correct: 0
+            };
+          }
+          weakMap[key].mistakeCount++;
+          if (m.errorTag) {
+            weakMap[key].tags[m.errorTag] = (weakMap[key].tags[m.errorTag] || 0) + 1;
+          }
+        });
+
+        // Also check attempts for low accuracy subtopics (<60% with >= 2 attempts)
+        const attMap = {};
+        attempts.forEach(a => {
+          if (!a.chapter || !a.subtopic) return;
+          const sub = a.subject || 'Practice';
+          const key = `${sub}:::${a.chapter}:::${a.subtopic}`;
+          if (!attMap[key]) attMap[key] = { total: 0, correct: 0, subject: sub, chapter: a.chapter, subtopic: a.subtopic };
+          attMap[key].total++;
+          if (a.correct === 1 || a.correct === true) attMap[key].correct++;
+        });
+
+        for (const [key, aData] of Object.entries(attMap)) {
+          if (aData.total >= 2) {
+            const acc = Math.round((aData.correct / aData.total) * 100);
+            if (acc < 60) {
+              if (!weakMap[key]) {
+                weakMap[key] = {
+                  subject: aData.subject,
+                  chapter: aData.chapter,
+                  subtopic: aData.subtopic,
+                  mistakeCount: 0,
+                  tags: {},
+                  attempts: aData.total,
+                  correct: aData.correct
+                };
+              } else {
+                weakMap[key].attempts = aData.total;
+                weakMap[key].correct = aData.correct;
+              }
+            }
+          }
+        }
+
+        const weakList = Object.values(weakMap);
+        // Sort: highest mistakeCount first, then lowest accuracy
+        weakList.sort((a, b) => {
+          if (b.mistakeCount !== a.mistakeCount) return b.mistakeCount - a.mistakeCount;
+          const accA = a.attempts > 0 ? (a.correct / a.attempts) : 100;
+          const accB = b.attempts > 0 ? (b.correct / b.attempts) : 100;
+          return accA - accB;
+        });
+
+        if (weakList.length === 0) {
+          weakSpotsContainer.innerHTML = `
+            <div class="sc-weak-box sc-weak-clean-state">
+              <div class="sc-weak-icon">🛡️</div>
+              <div class="sc-weak-empty-text">
+                <b style="color:var(--emerald);">All Clear! No Active Weak Points</b>
+                <p>You have resolved all questions in your Mistake Vault with zero active stumbling blocks. Great work!</p>
+              </div>
+            </div>
+          `;
+        } else {
+          const topWeak = weakList.slice(0, 3);
+          weakSpotsContainer.innerHTML = `
+            <div class="sc-weak-box">
+              <div class="sc-weak-top-bar">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span class="sc-weak-indicator-dot"></span>
+                  <b style="font-size:13px;color:var(--ink);">Weak Points Needing Attention</b>
+                  <span class="sc-weak-pill-count">${weakList.length} topic${weakList.length > 1 ? 's' : ''}</span>
+                </div>
+                <button class="sc-weak-vault-link" onclick="App.showMistakes()">Open Vault (${activeMistakesCount}) →</button>
+              </div>
+              <div class="sc-weak-grid">
+                ${topWeak.map(w => {
+                  const safeChap = (w.chapter || '').replace(/'/g, "\\'");
+                  const safeSub = (w.subtopic || '').replace(/'/g, "\\'");
+                  let topTag = '';
+                  let maxTagCnt = 0;
+                  for (const [t, c] of Object.entries(w.tags)) {
+                    if (c > maxTagCnt) { maxTagCnt = c; topTag = t; }
+                  }
+                  const acc = w.attempts > 0 ? Math.round((w.correct / w.attempts) * 100) : null;
+                  return `
+                    <div class="sc-weak-card">
+                      <div class="sc-weak-card-content">
+                        <div class="sc-weak-card-subj">${w.subject} · ${w.chapter}</div>
+                        <div class="sc-weak-card-topic" title="${w.subtopic}">${w.subtopic}</div>
+                        <div class="sc-weak-card-meta">
+                          ${w.mistakeCount > 0 ? `<span class="sc-weak-stat-mistakes">❌ ${w.mistakeCount} mistake${w.mistakeCount > 1 ? 's' : ''}</span>` : ''}
+                          ${acc !== null ? `<span class="sc-weak-stat-acc">🎯 ${acc}% acc</span>` : ''}
+                          ${topTag ? `<span class="sc-weak-stat-tag">${topTag}</span>` : ''}
+                        </div>
+                      </div>
+                      <button class="sc-weak-practice-btn" onclick="App.quickSubtopicDrill('${safeChap}', '${safeSub}')" title="Practice 15 questions on ${w.subtopic}">
+                        ▶ Practice
+                      </button>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        }
+      }
+    }
+
+    // 7. Backward-compatibility elements
     const attOld = document.getElementById('attempted');
     if (attOld) attOld.textContent = totalAttempted;
     const negOld = document.getElementById('negBleed');
@@ -695,7 +830,8 @@ Object.assign(window.App, {
   },
 
   async resetScorecardProgress() {
-    if (!confirm('Reset your lifetime scorecard statistics back to clean baseline (0 Solved, 0 pts)?\n\nYour saved questions will be preserved.')) return;
+    if (!confirm('Reset your practice statistics back to clean baseline?\n\nThis will clear attempts and mistakes so you can start fresh.')) return;
+    if (window.db && db.mistakes) await db.mistakes.clear();
     if (window.db && db.attempts) await db.attempts.clear();
     if (window.db && db.sessions) await db.sessions.clear();
     await this.updateTopStats();
