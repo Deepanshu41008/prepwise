@@ -185,6 +185,10 @@ Object.assign(window.App, {
         </div>
       `).join('') : '<div class="empty">No completed practice sessions yet. Complete your first drill or marathon to build your history!</div>';
     }
+
+    // 7. Data-Backed Cognitive Struggle & Recovery Opportunities
+    const struggleInsights = await this.computeCognitiveStruggleInsights();
+    this.renderGrowthBoardCognitiveRecovery(struggleInsights ? struggleInsights.allStruggles : []);
   },
 
   renderGbChaptersTable(attempts = []) {
@@ -341,11 +345,28 @@ Object.assign(window.App, {
     const container = document.getElementById('mistakeList');
     if (!container) return;
 
+    // Fetch bookmarks to check which ones are saved to "previous_mistakes"
+    let savedMistakeIds = new Set();
+    try {
+      const allBookmarks = await db.bookmarks.toArray();
+      savedMistakeIds = new Set(allBookmarks.filter(b => b.folder === 'previous_mistakes').map(b => b.questionId));
+    } catch (e) {
+      console.warn('Error fetching bookmarks for mistake view:', e);
+    }
+
     const tags = ['Silly Misread', 'Formula Forgotten', 'Calculation Error', 'NCERT Line Missed', 'Concept Gap'];
-    container.innerHTML = items.length ? items.map(m => `
+    container.innerHTML = items.length ? items.map(m => {
+      const isSaved = savedMistakeIds.has(m.questionId);
+      const safeChap = (m.chapter || '').replace(/'/g, "\\'");
+      const safeSub = (m.subtopic || '').replace(/'/g, "\\'");
+      return `
       <article class="bookmark-item">
         <div style="flex:1">
-          <span class="tag" style="background:#fee2e2;color:var(--red)">${m.subject} · ${m.subtopic} · ${m.timeSpent || 0}s</span>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+            <span class="tag" style="background:#fee2e2;color:var(--red)">${m.subject} · ${m.chapter || ''} · ${m.subtopic || ''}</span>
+            <span class="tag" style="background:#f1f5f9;color:var(--muted)">⏱️ ${m.timeSpent || 0}s spent</span>
+            ${isSaved ? '<span class="tag" style="background:#ede9fe;color:#6d28d9;border:1px solid #ddd6fe;font-weight:700;">⭐ Saved in Previous Mistakes</span>' : ''}
+          </div>
           <h3>${m.q.question}</h3>
           <p>${m.q.solution}</p>
           <div class="mistake-tags">
@@ -356,11 +377,51 @@ Object.assign(window.App, {
             `).join('')}
           </div>
         </div>
-        <button class="secondary" style="border-color:var(--emerald);color:var(--emerald)" onclick="App.resolveMistake('${m.questionId}')">Mastered ✓</button>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+          <button class="secondary" style="border-color:${isSaved ? '#7c3aed' : '#8b5cf6'};color:${isSaved ? '#7c3aed' : '#6d28d9'};font-weight:600;" onclick="App.toggleSaveMistakeConcept('${m.questionId}')">
+            ${isSaved ? '⭐ Saved in Previous Mistakes ✓' : '💾 Save to Previous Mistakes'}
+          </button>
+          <button class="secondary" style="border-color:#4f46e5;color:#4f46e5;font-weight:600;" onclick="App.launchConceptCalibrationDrill('${safeChap}','${safeSub}')">
+            🔄 Test Fresh Variant
+          </button>
+          <button class="secondary" style="border-color:var(--emerald);color:var(--emerald)" onclick="App.resolveMistake('${m.questionId}')">
+            Mastered ✓
+          </button>
+        </div>
       </article>
-    `).join('') : '<div class="empty">Zero active mistakes! Great work — keep practicing to audit your negative mark bleeds.</div>';
+      `;
+    }).join('') : '<div class="empty">Zero active mistakes! Great work — keep practicing to audit your negative mark bleeds.</div>';
 
     this.typesetMath();
+  },
+
+  async toggleSaveMistakeConcept(id) {
+    if (!window.db || !db.bookmarks || !db.mistakes) return;
+    try {
+      const mistake = await db.mistakes.get(id);
+      if (!mistake) return;
+
+      const existingBookmark = await db.bookmarks.get(id);
+      if (existingBookmark && existingBookmark.folder === 'previous_mistakes') {
+        // Toggle off: remove
+        await db.bookmarks.delete(id);
+      } else {
+        // Save as previous mistake
+        await db.bookmarks.put({
+          questionId: mistake.questionId,
+          subject: mistake.subject,
+          chapter: mistake.chapter,
+          subtopic: mistake.subtopic,
+          q: mistake.q,
+          folder: 'previous_mistakes',
+          errorTag: mistake.errorTag || 'Concept Gap',
+          savedAt: Date.now()
+        });
+      }
+      this.showMistakes();
+    } catch (e) {
+      console.error('toggleSaveMistakeConcept error:', e);
+    }
   },
 
   async tagMistake(id, tag) {
@@ -373,29 +434,93 @@ Object.assign(window.App, {
     this.showMistakes();
   },
 
+  currentBmFolder: 'ALL',
+  currentBmSubject: 'ALL',
+
+  filterBookmarksFolder(folder) {
+    this.currentBmFolder = folder;
+    document.querySelectorAll('#bmCategoryTabs .bm-tab').forEach(btn => {
+      const isTarget = (folder === 'ALL' && btn.textContent.includes('All')) ||
+                       (folder === 'previous_mistakes' && btn.textContent.includes('Previous Mistakes')) ||
+                       (folder === 'starred' && btn.textContent.includes('Starred'));
+      btn.classList.toggle('active', isTarget);
+    });
+    this.renderBookmarksList();
+  },
+
+  filterBookmarksSubj(subj) {
+    this.currentBmSubject = subj;
+    document.querySelectorAll('#bmSubjectPills button').forEach(btn => {
+      btn.classList.toggle('active', btn.textContent.includes(subj));
+    });
+    this.renderBookmarksList();
+  },
+
   async showBookmarks() {
     this.showView('bookmarksView');
-    const items = await db.bookmarks.toArray();
-    const container = document.getElementById('bookmarkList');
-    if (!container) return;
+    await this.renderBookmarksList();
+  },
 
-    container.innerHTML = items.length ? items.map(b => `
+  async renderBookmarksList() {
+    const container = document.getElementById('bookmarkList');
+    if (!container || !window.db || !db.bookmarks) return;
+
+    const allItems = await db.bookmarks.toArray();
+    const mistakesCount = allItems.filter(b => b.folder === 'previous_mistakes').length;
+    const starredCount = allItems.filter(b => b.folder !== 'previous_mistakes').length;
+
+    const cAll = document.getElementById('bmCountAll');
+    if (cAll) cAll.textContent = allItems.length;
+    const cMis = document.getElementById('bmCountMistakes');
+    if (cMis) cMis.textContent = mistakesCount;
+    const cStar = document.getElementById('bmCountStarred');
+    if (cStar) cStar.textContent = starredCount;
+
+    let filtered = allItems;
+    if (this.currentBmFolder === 'previous_mistakes') {
+      filtered = filtered.filter(b => b.folder === 'previous_mistakes');
+    } else if (this.currentBmFolder === 'starred') {
+      filtered = filtered.filter(b => b.folder !== 'previous_mistakes');
+    }
+
+    if (this.currentBmSubject && this.currentBmSubject !== 'ALL') {
+      filtered = filtered.filter(b => b.subject && b.subject.toLowerCase() === this.currentBmSubject.toLowerCase());
+    }
+
+    container.innerHTML = filtered.length ? filtered.map(b => {
+      const isMistake = b.folder === 'previous_mistakes';
+      const safeChap = (b.chapter || '').replace(/'/g, "\\'");
+      const safeSub = (b.subtopic || '').replace(/'/g, "\\'");
+      return `
       <article class="bookmark-item">
         <div style="flex:1">
-          <span class="tag">${b.subject} · ${b.subtopic}</span>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+            <span class="tag">${b.subject} · ${b.chapter || ''} · ${b.subtopic || ''}</span>
+            ${isMistake ? '<span class="tag" style="background:#ede9fe;color:#6d28d9;border:1px solid #ddd6fe;font-weight:700;">📌 High-Yield Previous Mistake</span>' : '<span class="tag" style="background:#fef3c7;color:#b45309;border:1px solid #fde68a;font-weight:700;">⭐ Starred Drill Question</span>'}
+            ${b.errorTag ? `<span class="tag" style="background:#fee2e2;color:#b91c1c;font-weight:600;">🏷️ Root Cause: ${b.errorTag}</span>` : ''}
+            <span class="tag" style="background:#f1f5f9;color:var(--muted)">Saved ${new Date(b.savedAt || Date.now()).toLocaleDateString()}</span>
+          </div>
           <h3>${b.q.question}</h3>
           <p>${b.q.solution}</p>
         </div>
-        <button class="secondary" onclick="App.deleteBookmark('${b.questionId}')">Remove</button>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+          <button class="secondary" style="border-color:#4f46e5;color:#4f46e5;font-weight:600;" onclick="App.launchConceptCalibrationDrill('${safeChap}','${safeSub}')">
+            🔄 Test Fresh Variant
+          </button>
+          <button class="secondary" onclick="App.deleteBookmark('${b.questionId}')">
+            Remove
+          </button>
+        </div>
       </article>
-    `).join('') : '<div class="empty">No bookmarks saved yet. Star difficult questions during practice drills to review them here.</div>';
+      `;
+    }).join('') : `<div class="empty">No questions found in this category (${this.currentBmFolder === 'previous_mistakes' ? 'Previous Mistakes' : (this.currentBmFolder === 'starred' ? 'Starred' : 'All')}). Save key concepts from your Mistake Vault or practice drills to review them here.</div>`;
 
     this.typesetMath();
   },
 
   async deleteBookmark(id) {
     await db.bookmarks.delete(id);
-    this.showBookmarks();
+    this.renderBookmarksList();
   },
 
   async toggleBookmark() {
@@ -404,9 +529,218 @@ Object.assign(window.App, {
     if (exists) {
       await db.bookmarks.delete(q.id);
     } else {
-      await db.bookmarks.put({ questionId: q.id, subject: q.subject, chapter: q.chapter, subtopic: q.subtopic, q });
+      await db.bookmarks.put({ questionId: q.id, subject: q.subject, chapter: q.chapter, subtopic: q.subtopic, q, savedAt: Date.now() });
     }
     this.renderQuestion();
+  },
+
+  // ==================== COGNITIVE STRUGGLE METRIC & NUDGING SYSTEM ====================
+  async computeCognitiveStruggleInsights() {
+    if (!window.db || !db.attempts) return null;
+    try {
+      const [attempts, mistakes] = await Promise.all([
+        db.attempts.toArray(),
+        db.mistakes ? db.mistakes.toArray() : []
+      ]);
+
+      if (!attempts || attempts.length < 4) return null;
+
+      // Group attempts by subject + chapter + subtopic
+      const groups = {};
+      for (const a of attempts) {
+        if (!a.chapter || !a.subtopic) continue;
+        const key = `${a.subject || 'General'}:::${a.chapter}:::${a.subtopic}`;
+        if (!groups[key]) {
+          groups[key] = {
+            subject: a.subject || 'General',
+            chapter: a.chapter,
+            subtopic: a.subtopic,
+            attempts: []
+          };
+        }
+        groups[key].attempts.push(a);
+      }
+
+      const struggles = [];
+      const now = Date.now();
+      const fourteenDaysMs = 14 * 24 * 3600 * 1000;
+
+      for (const key of Object.keys(groups)) {
+        const g = groups[key];
+        const atts = g.attempts;
+        const total = atts.length;
+        const correct = atts.filter(a => a.correct === 1 || a.correct === true).length;
+        const wrong = total - correct;
+        const accuracy = Math.round((correct / total) * 100);
+        const negativeBleed = wrong;
+
+        // Cluster attempts by timestamp (> 15 mins gap => distinct practice event)
+        const sortedTimes = atts.map(a => a.timestamp || 0).sort((x, y) => x - y);
+        let distinctSessions = 1;
+        for (let i = 1; i < sortedTimes.length; i++) {
+          if (sortedTimes[i] - sortedTimes[i - 1] > 15 * 60 * 1000) {
+            distinctSessions++;
+          }
+        }
+
+        // Tag matching
+        const relatedMistakes = mistakes.filter(m => m.chapter === g.chapter && m.subtopic === g.subtopic);
+        const tagCounts = {};
+        relatedMistakes.forEach(m => {
+          if (m.errorTag) tagCounts[m.errorTag] = (tagCounts[m.errorTag] || 0) + 1;
+        });
+        let dominantTag = null;
+        let maxTagCount = 0;
+        for (const [t, c] of Object.entries(tagCounts)) {
+          if (c > maxTagCount) { maxTagCount = c; dominantTag = t; }
+        }
+
+        // STRICT GATEKEEPER CRITERIA:
+        // 1. At least 4 attempts in this subtopic
+        // 2. Spread across at least 2 distinct practice events/sessions
+        // 3. Accuracy < 50% OR negative marks bled >= 3
+        // 4. At least one attempt in the last 14 days
+        const latestAttemptTime = Math.max(...sortedTimes, 0);
+        const isRecent = latestAttemptTime === 0 || (now - latestAttemptTime) <= fourteenDaysMs;
+
+        if (total >= 4 && distinctSessions >= 2 && (accuracy < 50 || negativeBleed >= 3) && isRecent) {
+          const recoveryPotential = Math.min(16, (wrong * 4) + negativeBleed);
+          const priorityScore = (negativeBleed * 4) + (100 - accuracy) + (relatedMistakes.length * 3);
+          struggles.push({
+            subject: g.subject,
+            chapter: g.chapter,
+            subtopic: g.subtopic,
+            totalAttempts: total,
+            correct,
+            wrong,
+            accuracy,
+            negativeBleed,
+            distinctSessions,
+            recoveryPotential,
+            priorityScore,
+            dominantTag,
+            activeMistakesCount: relatedMistakes.length,
+            latestAttemptTime
+          });
+        }
+      }
+
+      struggles.sort((a, b) => b.priorityScore - a.priorityScore);
+      return {
+        topStruggle: struggles[0] || null,
+        allStruggles: struggles
+      };
+    } catch (e) {
+      console.warn('computeCognitiveStruggleInsights error:', e);
+      return null;
+    }
+  },
+
+  async renderSmartConceptNudge() {
+    const container = document.getElementById('smartConceptNudgeContainer');
+    if (!container) return;
+
+    // Check snooze
+    const snoozeUntil = Number(localStorage.getItem('prepwise_struggle_nudge_snooze') || 0);
+    if (Date.now() < snoozeUntil) {
+      container.innerHTML = '';
+      return;
+    }
+
+    const insights = await this.computeCognitiveStruggleInsights();
+    if (!insights || !insights.topStruggle) {
+      container.innerHTML = '';
+      return;
+    }
+
+    const top = insights.topStruggle;
+    const safeChap = (top.chapter || '').replace(/'/g, "\\'");
+    const safeSub = (top.subtopic || '').replace(/'/g, "\\'");
+
+    container.innerHTML = `
+      <div class="concept-nudge-card">
+        <div class="concept-nudge-header">
+          <span class="nudge-badge">💡 FINESSE YOUR STRENGTH · RECOVERY OPPORTUNITY</span>
+          <button class="nudge-snooze-btn" onclick="App.snoozeSmartNudge(24)" title="Snooze for 24 Hours">⏱️ Remind Me Tomorrow</button>
+        </div>
+        <div class="concept-nudge-body">
+          <h3>Turn Near-Misses in <u>${top.chapter} · ${top.subtopic}</u> into Guaranteed +${top.recoveryPotential} Marks</h3>
+          <p class="concept-nudge-proof">
+            <b>📊 Hard Data Proof:</b> You attempted <b>${top.totalAttempts} questions</b> across <b>${top.distinctSessions} practice sessions</b> with <b>${top.accuracy}% accuracy</b> and lost <b>-${top.negativeBleed} negative marks</b>.
+            ${top.dominantTag ? `<br><b>🏷️ Primary Trap Pattern:</b> <i>${top.dominantTag}</i>.` : ''}
+            Practicing 5 fresh concept variants will plug this leak before exam day.
+          </p>
+          <div class="concept-nudge-actions">
+            <button class="primary" onclick="App.launchConceptCalibrationDrill('${safeChap}', '${safeSub}')">
+              ▶ Launch 5-Q Focus Calibration Drill (Fresh Variations) →
+            </button>
+            <button class="secondary" onclick="App.snoozeSmartNudge(24)">Remind Me Later</button>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  snoozeSmartNudge(hours = 24) {
+    localStorage.setItem('prepwise_struggle_nudge_snooze', Date.now() + (hours * 3600 * 1000));
+    const container = document.getElementById('smartConceptNudgeContainer');
+    if (container) container.innerHTML = '';
+  },
+
+  renderGrowthBoardCognitiveRecovery(allStruggles = []) {
+    const container = document.getElementById('gbCognitiveRecoveryContainer');
+    if (!container) return;
+
+    if (!allStruggles.length) {
+      container.innerHTML = `
+        <div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="font-size:24px;">🛡️</div>
+            <div>
+              <strong style="color:#166534;font-size:15px;display:block;">Zero Repeated Concept Bleeds Detected</strong>
+              <small style="color:#15803d;font-size:12.5px;">No subtopic currently meets the struggle threshold (min 4 attempts across &ge;2 sessions with &lt;50% accuracy). Your foundation is sound!</small>
+            </div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="card" style="border:1.5px solid #a7f3d0;background:#ffffff;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <h3 style="font:700 18px 'Space Grotesk';color:#064e3b;margin:0;">🎯 Data-Proven Mark Recovery Opportunities (${allStruggles.length})</h3>
+            <p style="color:#065f46;font-size:13px;margin:2px 0 0;">Identified strictly with statistical proof (&ge;4 attempts across &ge;2 sessions with &lt;50% accuracy or &ge;3 marks lost).</p>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:12px;">
+          ${allStruggles.map(s => {
+            const safeChap = (s.chapter || '').replace(/'/g, "\\'");
+            const safeSub = (s.subtopic || '').replace(/'/g, "\\'");
+            return `
+            <div style="background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;justify-content:space-between;">
+              <div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                  <span class="tag" style="font-size:11px;">${s.subject}</span>
+                  <span class="tag" style="background:#fee2e2;color:var(--red);font-weight:700;">-${s.negativeBleed} Marks Bleed</span>
+                </div>
+                <h4 style="font-size:14px;margin:0 0 6px 0;font-weight:700;color:var(--ink);">${s.chapter}</h4>
+                <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px;">Subtopic: <b>${s.subtopic}</b></div>
+                <div style="font-size:12px;color:#475569;background:#ffffff;padding:8px;border-radius:6px;border:1px solid #e2e8f0;margin-bottom:10px;">
+                  📊 <b>Proof:</b> ${s.totalAttempts} Qs across ${s.distinctSessions} sessions · <b>${s.accuracy}% Accuracy</b><br>
+                  ${s.dominantTag ? `🏷️ <i>Primary trap: ${s.dominantTag}</i>` : '🎯 <i>High-yield calibration zone</i>'}
+                </div>
+              </div>
+              <button class="primary" style="background:#059669;width:100%;font-size:12.5px;padding:8px 12px;" onclick="App.launchConceptCalibrationDrill('${safeChap}', '${safeSub}')">
+                ▶ Calibrate Strength (+${s.recoveryPotential} pts) →
+              </button>
+            </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
   },
 
   async showDiagnostics() {

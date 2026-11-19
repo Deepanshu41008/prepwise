@@ -2182,3 +2182,191 @@ button[title], select[title], input[title], a[title], .stat-pill[title], .card[t
   .ta-hero-card { padding: 18px 16px; }
   .ta-filter-bar { flex-direction: column; align-items: stretch; }
 }
+
+/* Smart Cognitive Nudge & Recovery Styles */
+.concept-nudge-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border: 1.5px solid #a7f3d0;
+  border-left: 6px solid #059669;
+  border-radius: 14px;
+  padding: 20px 24px;
+  margin: 24px 0;
+  box-shadow: 0 4px 16px rgba(5, 150, 105, 0.08);
+  animation: fadeInNudge 0.3s ease-out;
+}
+@keyframes fadeInNudge {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.concept-nudge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.nudge-badge {
+  background: #d1fae5;
+  color: #047857;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+.nudge-snooze-btn {
+  background: transparent;
+  color: #047857;
+  border: 1px solid #6ee7b7;
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.nudge-snooze-btn:hover {
+  background: #d1fae5;
+}
+.concept-nudge-body h3 {
+  font: 700 18px 'Space Grotesk', sans-serif;
+  color: #064e3b;
+  margin-bottom: 8px;
+}
+.concept-nudge-proof {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #065f46;
+  margin-bottom: 16px;
+}
+.concept-nudge-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.concept-nudge-actions .primary {
+  background: #059669;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 10px 18px;
+  border-radius: 8px;
+}
+.concept-nudge-actions .primary:hover {
+  background: #047857;
+}
+
+/* Saved Questions / Bookmarks Categorized Tabs */
+.bm-filter-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+}
+.bm-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.bm-tab {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.bm-tab:hover {
+  border-color: var(--teal);
+  color: var(--ink);
+}
+.bm-tab.active {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: var(--white);
+}
+.bm-subj-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Polymorphic 360 Concept Mastery Matrix */
+.poly-mastery-matrix {
+  background: #faf5ff;
+  border: 1.5px solid #e9d5ff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 14px;
+}
+.pmm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pmm-header span:first-child {
+  font: 700 14px 'Space Grotesk', sans-serif;
+  color: #6b21a8;
+}
+.pmm-badge {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid #d8b4fe;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+.pmm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.pmm-quad {
+  background: #ffffff;
+  border: 1px solid #f3e8ff;
+  border-radius: 8px;
+  padding: 10px 12px;
+  transition: all 0.2s;
+}
+.pmm-quad.active {
+  border-color: #9333ea;
+  background: #faf5ff;
+  box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.15);
+}
+.pmm-quad-title {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #4c1d95;
+  margin-bottom: 3px;
+}
+.pmm-quad.active .pmm-quad-title {
+  color: #7e22ce;
+}
+.pmm-quad small {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.35;
+  display: block;
+}
+.pmm-note {
+  font-size: 12px;
+  color: #581c87;
+  line-height: 1.45;
+  border-top: 1px dashed #e9d5ff;
+  padding-top: 8px;
+  margin-top: 6px;
+}

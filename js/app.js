@@ -70,6 +70,7 @@ Object.assign(window.App, {
       await this.updateTopStats();
       await this.updateMockKpis();
       if (typeof this.initPlanner === 'function') this.initPlanner();
+      if (typeof this.renderSmartConceptNudge === 'function') this.renderSmartConceptNudge();
     } catch (e) {
       console.warn('Stats update notice:', e);
     }
@@ -463,7 +464,12 @@ Object.assign(window.App, {
 
       if (pool.length >= count) {
         this.hideLoading();
-        const selected = this.shuffle(pool).slice(0, count);
+        let selected;
+        if (window.QuestionPolymorphismEngine && typeof window.QuestionPolymorphismEngine.ensureFreshQuestions === 'function') {
+          selected = await window.QuestionPolymorphismEngine.ensureFreshQuestions(pool, count, st);
+        } else {
+          selected = this.shuffle(pool).slice(0, count);
+        }
         const title = chap !== 'ALL' ? (st !== 'ALL' ? `${chap} · ${st}` : chap) : (subj !== 'ALL' ? `${subj} Practice` : 'Custom Drill');
         this.beginSession(selected, title, false, false, 12000, false, isExamMode);
         return;
@@ -507,7 +513,12 @@ Object.assign(window.App, {
         return alert('No questions matched this exact filter. Try selecting "All Difficulties" or "All Subtopics".');
       }
 
-      const selected = this.shuffle(finalPool).slice(0, count);
+      let selected;
+      if (window.QuestionPolymorphismEngine && typeof window.QuestionPolymorphismEngine.ensureFreshQuestions === 'function') {
+        selected = await window.QuestionPolymorphismEngine.ensureFreshQuestions(finalPool, count, st);
+      } else {
+        selected = this.shuffle(finalPool).slice(0, count);
+      }
       const title = chap !== 'ALL' ? (st !== 'ALL' ? `${chap} · ${st}` : chap) : (subj !== 'ALL' ? `${subj} Practice` : 'Custom Drill');
       this.beginSession(selected, title, false, false, 12000, false, isExamMode);
     } catch (e) {
@@ -576,6 +587,10 @@ Object.assign(window.App, {
 
     if (typeof window.scrollTo === 'function') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    if (id === 'dashboard' && typeof this.renderSmartConceptNudge === 'function') {
+      this.renderSmartConceptNudge();
     }
   },
 

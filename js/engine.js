@@ -368,6 +368,37 @@ Object.assign(window.App, {
     let feedbackHtml = '';
     if (showLockedFeedback) {
       const isCorrect = st.picked === q.correct_option;
+      const currentLens = q.polymorphicLens || 'Direct Forward Solve';
+      const polyMatrixHtml = `
+        <div class="poly-mastery-matrix">
+          <div class="pmm-header">
+            <span>🧬 360° Concept Mastery Matrix</span>
+            <span class="pmm-badge">Current Angle: ${currentLens}</span>
+          </div>
+          <div class="pmm-grid">
+            <div class="pmm-quad ${(!q.polymorphicLens || q.polymorphicLens.includes('Forward') || q.polymorphicLens.includes('Jitter')) ? 'active' : ''}">
+              <span class="pmm-quad-title">Lens 1: Forward Solve</span>
+              <small>Dynamic parameter jitter & standard direct calculation</small>
+            </div>
+            <div class="pmm-quad ${(q.polymorphicLens && q.polymorphicLens.includes('Inverse')) ? 'active' : ''}">
+              <span class="pmm-quad-title">Lens 2: Reverse Unknown</span>
+              <small>Backward deduction from observed outputs to inputs</small>
+            </div>
+            <div class="pmm-quad ${(q.polymorphicLens && q.polymorphicLens.includes('Assertion')) ? 'active' : ''}">
+              <span class="pmm-quad-title">Lens 3: Assertion-Reason</span>
+              <small>NTA-standard causal & statement analysis</small>
+            </div>
+            <div class="pmm-quad ${(q.polymorphicLens && q.polymorphicLens.includes('Scaling')) ? 'active' : ''}">
+              <span class="pmm-quad-title">Lens 4: What-If Scaling</span>
+              <small>Functional proportionality & perturbation analysis</small>
+            </div>
+          </div>
+          <div class="pmm-note">
+            💡 <b>Concept Polymorphism:</b> Practicing variations across all 4 pedagogical lenses builds deep conceptual immunity for NEET day.
+          </div>
+        </div>
+      `;
+
       if (isCorrect) {
         // Correct answer -> Full solution immediately!
         feedbackHtml = `
@@ -377,6 +408,7 @@ Object.assign(window.App, {
               <span class="tag" style="background:#dcfce7;color:var(--emerald);font-weight:700;">Full Solution Active</span>
             </div>
             <div style="margin-top:10px;">${q.solution || ''}</div>
+            ${polyMatrixHtml}
             <small style="display:block;margin-top:10px;color:var(--muted)">📖 ${q.ncert_ref || 'NCERT Standard Reference'}</small>
           </div>
         `;
@@ -429,6 +461,7 @@ Object.assign(window.App, {
               </div>
             `}
 
+            ${polyMatrixHtml}
             <small style="display:block;margin-top:12px;color:var(--muted)">📖 ${q.ncert_ref || 'NCERT Standard Reference'}</small>
           </div>
         `;
@@ -439,7 +472,10 @@ Object.assign(window.App, {
       <div class="question-card">
         <div class="q-meta">
           <span title="Curriculum Path">${meta}</span>
-          <span class="tag" title="Exam Tag">${q.year_tag || 'NEET Bank'}</span>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            ${q.polymorphicLens ? `<span class="tag" style="background:#ede9fe;color:#6d28d9;border:1px solid #ddd6fe;font-weight:700;" title="360° Concept Polymorphic Lens">🧬 ${q.polymorphicLens}</span>` : ''}
+            <span class="tag" title="Exam Tag">${q.year_tag || 'NEET Bank'}</span>
+          </div>
         </div>
         <div class="question">${q.question}</div>
         <div class="answers">
@@ -1144,6 +1180,14 @@ Object.assign(window.App, {
             <button id="taSaveBtn_${item.idx}" class="secondary" style="font-size:12px;padding:6px 12px;" onclick="App.saveAnalysisMistake(${item.idx}, '${item.errorTag}')" title="Log question to Mistake Vault">
               📌 Save to Mistake Vault
             </button>
+            ${item.isWrong ? `
+              <button class="secondary" style="font-size:12px;padding:6px 12px;border-color:#7c3aed;color:#6d28d9;font-weight:600;" onclick="App.toggleSaveMistakeConcept('${q.id}')">
+                💾 Save to Previous Mistakes
+              </button>
+              <button class="secondary" style="font-size:12px;padding:6px 12px;border-color:#4f46e5;color:#4f46e5;font-weight:600;" onclick="App.launchConceptCalibrationDrill('${(q.chapter||'').replace(/'/g, "\\'")}', '${(q.subtopic||'').replace(/'/g, "\\'")}')">
+                🔄 Test Fresh Variant
+              </button>
+            ` : ''}
           </div>
         </div>
       `;

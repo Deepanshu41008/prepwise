@@ -243,6 +243,9 @@
         </section>
       </div>
 
+      <!-- DATA-BACKED COGNITIVE STRUGGLE & RECOVERY NUDGE -->
+      <div id="smartConceptNudgeContainer"></div>
+
       <!-- UNIFIED CHAPTER PRACTICE HUB -->
       <div class="syllabus-hub">
         <div class="syllabus-hub-header">
@@ -715,9 +718,25 @@
       <div class="breadcrumb"><span class="crumb-link" onclick="App.showView('dashboard')">Home</span> / <span>Saved Questions</span></div>
       <div class="practice-top">
         <button class="back-btn" onclick="App.showView('dashboard')"><i>←</i> Back to Home</button>
-        <div><div class="eyebrow">Saved for Revision</div><h1>Bookmarked Questions</h1></div>
+        <div><div class="eyebrow">Saved for Revision</div><h1>Saved Questions & High-Yield Concepts</h1></div>
       </div>
-      <div class="setup-card" style="max-width:940px"><div id="bookmarkList"></div></div>
+      <div class="setup-card" style="max-width:980px">
+        <div class="bm-filter-bar" id="bmFilterBar">
+          <div class="bm-tabs" id="bmCategoryTabs">
+            <button class="bm-tab active" onclick="App.filterBookmarksFolder('ALL')">All Saved (<span id="bmCountAll">0</span>)</button>
+            <button class="bm-tab" onclick="App.filterBookmarksFolder('previous_mistakes')">📌 Previous Mistakes (<span id="bmCountMistakes">0</span>)</button>
+            <button class="bm-tab" onclick="App.filterBookmarksFolder('starred')">⭐ Starred (<span id="bmCountStarred">0</span>)</button>
+          </div>
+          <div class="bm-subj-pills" id="bmSubjectPills">
+            <button class="pill active" onclick="App.filterBookmarksSubj('ALL')">All Subjects</button>
+            <button class="pill" onclick="App.filterBookmarksSubj('Physics')">Physics</button>
+            <button class="pill" onclick="App.filterBookmarksSubj('Chemistry')">Chemistry</button>
+            <button class="pill" onclick="App.filterBookmarksSubj('Botany')">Botany</button>
+            <button class="pill" onclick="App.filterBookmarksSubj('Zoology')">Zoology</button>
+          </div>
+        </div>
+        <div id="bookmarkList"></div>
+      </div>
     </section>
 
     <!-- 7. MISTAKES VIEW -->
@@ -792,6 +811,9 @@
             <small style="color:var(--muted)" id="gbCollegeBand">Requires 20+ questions</small>
           </div>
         </div>
+
+        <!-- 1.5 DATA-BACKED COGNITIVE STRUGGLE RECOVERY OPPORTUNITIES -->
+        <div id="gbCognitiveRecoveryContainer" style="margin-bottom:24px;"></div>
 
         <!-- 2. Subject-by-Subject Pacing & Mastery Gauges -->
         <div class="card" style="margin-bottom:24px;">
@@ -1340,6 +1362,7 @@
 <script src="js/analytics.js"></script>
 <script src="js/flashcards.js"></script>
 <script src="js/planner.js"></script>
+<script src="js/polymorphism.js"></script>
 <script src="js/app.js"></script>
 <script>
   // Immediate Boot Guarantee: Ensures content renders immediately upon script evaluation
