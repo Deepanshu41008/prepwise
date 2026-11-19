@@ -1190,8 +1190,8 @@ Object.assign(window.App, {
               <button class="secondary" style="font-size:12px;padding:6px 12px;border-color:#7c3aed;color:#6d28d9;font-weight:600;" onclick="App.toggleSaveMistakeConcept('${q.id}')">
                 💾 Save to Previous Mistakes
               </button>
-              <button class="secondary" style="font-size:12px;padding:6px 12px;border-color:#4f46e5;color:#4f46e5;font-weight:600;" onclick="App.launchConceptCalibrationDrill('${(q.chapter||'').replace(/'/g, "\\'")}', '${(q.subtopic||'').replace(/'/g, "\\'")}')">
-                🔄 Test Fresh Variant
+              <button class="secondary" style="font-size:12px;padding:6px 12px;border-color:#4f46e5;color:#4f46e5;font-weight:600;" onclick="App.launchConceptCalibrationDrill('${(q.chapter||'').replace(/'/g, "\\'")}', '${(q.subtopic||'').replace(/'/g, "\\'")}')" title="Test your knowledge with fresh questions on this concept">
+                🎯 Test Your Knowledge
               </button>
             ` : ''}
           </div>

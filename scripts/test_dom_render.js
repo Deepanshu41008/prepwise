@@ -116,9 +116,9 @@ async function testDomRender() {
   await window.App.showMistakes();
   const mistakeHtml = document.getElementById('mistakeList').innerHTML;
   assert(mistakeHtml.includes('Save to Previous Mistakes'), 'Mistake card must contain "Save to Previous Mistakes" button');
-  assert(mistakeHtml.includes('Test Fresh Variant'), 'Mistake card must contain "Test Fresh Variant" button');
+  assert(mistakeHtml.includes('Test Your Knowledge'), 'Mistake card must contain "Test Your Knowledge" button');
   assert(mistakeHtml.includes('Formula Forgotten'), 'Mistake card must display error tag');
-  console.log('✓ Mistake Vault DOM verified: Save to Previous Mistakes & Test Fresh Variant buttons rendered');
+  console.log('✓ Mistake Vault DOM verified: Save to Previous Mistakes & Test Your Knowledge buttons rendered');
 
   // Toggle Save into Previous Mistakes
   await window.App.toggleSaveMistakeConcept(sampleQ.id);
@@ -132,8 +132,8 @@ async function testDomRender() {
   const bmHtml = document.getElementById('bookmarkList').innerHTML;
   assert(bmHtml.includes('High-Yield Previous Mistake'), 'Card in Saved Questions must display "High-Yield Previous Mistake" badge');
   assert(bmHtml.includes('Formula Forgotten'), 'Card must retain root cause error tag');
-  assert(bmHtml.includes('Test Fresh Variant'), 'Card must feature "Test Fresh Variant" button');
-  console.log('✓ Saved Questions DOM verified: Badges, root cause tags, and fresh variant actions rendered cleanly');
+  assert(bmHtml.includes('Test Your Knowledge'), 'Card must feature "Test Your Knowledge" button');
+  console.log('✓ Saved Questions DOM verified: Badges, root cause tags, and Test Your Knowledge actions rendered cleanly');
 
   // TEST FEATURE 2: Smart Nudge & Growth Board Recovery Section
   // Populate struggle attempts
@@ -151,9 +151,9 @@ async function testDomRender() {
   assert(nudgeHtml.includes('FINESSE YOUR STRENGTH'), 'Nudge card must feature positive framing');
   assert(nudgeHtml.includes('Electric Flux & Gauss Law'), 'Nudge must target the exact struggling subtopic');
   assert(nudgeHtml.includes('Hard Data Proof'), 'Nudge must contain the data proof section');
-  assert(nudgeHtml.includes('Launch 5-Q Focus Calibration Drill'), 'Nudge must contain drill launch CTA');
+  assert(nudgeHtml.includes('Test Your Knowledge'), 'Nudge must contain Test Your Knowledge CTA');
   assert(nudgeHtml.includes('Remind Me Tomorrow'), 'Nudge must contain snooze option');
-  console.log('✓ Smart Nudge DOM verified: Positive framing, exact proof data, snooze & 5-Q calibration CTA');
+  console.log('✓ Smart Nudge DOM verified: Positive framing, exact proof data, snooze & Test Your Knowledge CTA');
 
   // Render Growth Board Recovery Opportunities
   const insights = await window.App.computeCognitiveStruggleInsights();

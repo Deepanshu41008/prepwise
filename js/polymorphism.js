@@ -347,7 +347,7 @@ window.App.launchConceptCalibrationDrill = async function(chapter, subtopic) {
     const freshQuestions = await window.QuestionPolymorphismEngine.ensureFreshQuestions(pool, 5, subtopic);
 
     if (typeof App.hideLoading === 'function') App.hideLoading();
-    const title = `🎯 Focus Calibration: ${subtopic || chapter} (5 Fresh Variants)`;
+    const title = `🎯 Test Your Knowledge: ${subtopic || chapter} (5 Questions)`;
     App.beginSession(freshQuestions, title, false, false, 12000, false, false);
   } catch (e) {
     if (typeof App.hideLoading === 'function') App.hideLoading();

@@ -401,8 +401,8 @@ Object.assign(window.App, {
           <button class="secondary" style="border-color:${isSaved ? '#7c3aed' : '#8b5cf6'};color:${isSaved ? '#7c3aed' : '#6d28d9'};font-weight:600;" onclick="App.toggleSaveMistakeConcept('${m.questionId}')">
             ${isSaved ? '⭐ Saved in Previous Mistakes ✓' : '💾 Save to Previous Mistakes'}
           </button>
-          <button class="secondary" style="border-color:#4f46e5;color:#4f46e5;font-weight:600;" onclick="App.launchConceptCalibrationDrill('${safeChap}','${safeSub}')">
-            🔄 Test Fresh Variant
+          <button class="secondary" style="border-color:#4f46e5;color:#4f46e5;font-weight:600;" onclick="App.launchConceptCalibrationDrill('${safeChap}','${safeSub}')" title="Test your knowledge with fresh questions on this concept">
+            🎯 Test Your Knowledge
           </button>
           <button class="secondary" style="border-color:var(--emerald);color:var(--emerald)" onclick="App.resolveMistake('${m.questionId}')">
             Mastered ✓
@@ -564,8 +564,8 @@ Object.assign(window.App, {
           <p>${solText}</p>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
-          <button class="secondary" style="border-color:#4f46e5;color:#4f46e5;font-weight:600;" onclick="App.launchConceptCalibrationDrill('${safeChap}','${safeSub}')">
-            🔄 Test Fresh Variant
+          <button class="secondary" style="border-color:#4f46e5;color:#4f46e5;font-weight:600;" onclick="App.launchConceptCalibrationDrill('${safeChap}','${safeSub}')" title="Test your knowledge with fresh questions on this concept">
+            🎯 Test Your Knowledge
           </button>
           <button class="secondary" onclick="App.deleteBookmark('${b.questionId}')">
             Remove
@@ -732,7 +732,7 @@ Object.assign(window.App, {
           </p>
           <div class="concept-nudge-actions">
             <button class="primary" onclick="App.launchConceptCalibrationDrill('${safeChap}', '${safeSub}')">
-              ▶ Launch 5-Q Focus Calibration Drill (Fresh Variations) →
+              ▶ Test Your Knowledge (5 Focus Questions) →
             </button>
             <button class="secondary" onclick="App.snoozeSmartNudge(24)">Remind Me Later</button>
           </div>
