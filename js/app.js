@@ -537,23 +537,137 @@ Object.assign(window.App, {
 
   async updateTopStats() {
     const attempts = await db.attempts.toArray();
-    const correct = attempts.filter(a => a.correct === 1 || a.correct === true).length;
-    const wrong = attempts.length - correct;
-    const netMarks = (correct * 4) - wrong;
+    const totalAttempted = attempts.length;
+    const correctAttempts = attempts.filter(a => a.correct === 1 || a.correct === true);
+    const totalCorrect = correctAttempts.length;
+    const totalWrong = totalAttempted - totalCorrect;
+    const netMarks = Math.max(0, (totalCorrect * 4) - totalWrong);
 
-    const attEl = document.getElementById('attempted');
+    // 1. Subject Breakdown for NTA 720 Balance (Biology 360, Chemistry 180, Physics 180)
+    let bioCorrect = 0, chemCorrect = 0, phyCorrect = 0;
+    let bioTotal = 0, chemTotal = 0, phyTotal = 0;
+    let totalTime = 0;
+
+    attempts.forEach(a => {
+      const s = a.subject || 'Physics';
+      const isCor = (a.correct === 1 || a.correct === true);
+      totalTime += (a.timeSpent || 0);
+
+      if (s === 'Botany' || s === 'Zoology' || s === 'Biology') {
+        bioTotal++;
+        if (isCor) bioCorrect++;
+      } else if (s === 'Chemistry') {
+        chemTotal++;
+        if (isCor) chemCorrect++;
+      } else {
+        phyTotal++;
+        if (isCor) phyCorrect++;
+      }
+    });
+
+    // 2. Populate LeetCode Hero Elements
+    const elSolved = document.getElementById('scSolvedCount');
+    if (elSolved) elSolved.textContent = totalCorrect;
+
+    const elAttempted = document.getElementById('scAttemptedCount');
+    if (elAttempted) elAttempted.textContent = totalAttempted;
+
+    // Biology Bar (Max 360)
+    const bioScore = Math.max(0, Math.min(360, (bioCorrect * 4) - Math.max(0, bioTotal - bioCorrect)));
+    const elBioVal = document.getElementById('scBioVal');
+    if (elBioVal) elBioVal.textContent = `${bioScore} / 360 pts`;
+    const elBioBar = document.getElementById('scBioBar');
+    if (elBioBar) elBioBar.style.width = `${Math.min(100, Math.round((bioScore / 360) * 100))}%`;
+
+    // Chemistry Bar (Max 180)
+    const chemScore = Math.max(0, Math.min(180, (chemCorrect * 4) - Math.max(0, chemTotal - chemCorrect)));
+    const elChemVal = document.getElementById('scChemVal');
+    if (elChemVal) elChemVal.textContent = `${chemScore} / 180 pts`;
+    const elChemBar = document.getElementById('scChemBar');
+    if (elChemBar) elChemBar.style.width = `${Math.min(100, Math.round((chemScore / 180) * 100))}%`;
+
+    // Physics Bar (Max 180)
+    const phyScore = Math.max(0, Math.min(180, (phyCorrect * 4) - Math.max(0, phyTotal - phyCorrect)));
+    const elPhyVal = document.getElementById('scPhyVal');
+    if (elPhyVal) elPhyVal.textContent = `${phyScore} / 180 pts`;
+    const elPhyBar = document.getElementById('scPhyBar');
+    if (elPhyBar) elPhyBar.style.width = `${Math.min(100, Math.round((phyScore / 180) * 100))}%`;
+
+    // 3. Accuracy with Cold-Start Protection (< 5 Qs)
     const accEl = document.getElementById('accuracy');
-    const negEl = document.getElementById('negBleed');
-    const scoreEl = document.getElementById('lifetimeScore');
-    const barEl = document.getElementById('streakBar');
+    const badgeEl = document.getElementById('scColdStartBadge');
+    if (accEl) {
+      if (totalAttempted === 0) {
+        accEl.textContent = '—';
+        if (badgeEl) badgeEl.textContent = '🌱 Ready to Train';
+      } else if (totalAttempted < 5) {
+        accEl.textContent = `Calibrating (${totalAttempted}/5)`;
+        if (badgeEl) badgeEl.textContent = `🌱 Warmup (${totalAttempted}/5 Qs)`;
+      } else {
+        const accPct = Math.round((totalCorrect / totalAttempted) * 100);
+        accEl.textContent = `${accPct}%`;
+        if (badgeEl) {
+          badgeEl.textContent = accPct >= 75 ? '⚡ Strong Pace' : (accPct >= 50 ? '▲ Calibrated' : '⚠️ Focus Needed');
+        }
+      }
+    }
 
-    if (attEl) attEl.textContent = attempts.length;
-    if (accEl) accEl.textContent = attempts.length ? `${Math.round((correct / attempts.length) * 100)}%` : '—';
-    if (negEl) negEl.textContent = wrong > 0 ? `-${wrong}` : '0';
-    // Cumulative points floor at 0 (never display negative lifetime points)
-    const displayNetScore = Math.max(0, netMarks);
-    if (scoreEl) scoreEl.textContent = attempts.length ? `${displayNetScore} pts` : '0 pts';
-    if (barEl) barEl.style.width = `${Math.min(100, attempts.length * 2)}%`;
+    // 4. Average Pacing
+    const paceEl = document.getElementById('scPacingVal');
+    if (paceEl) {
+      if (totalAttempted === 0) {
+        paceEl.textContent = '— s/Q';
+      } else {
+        const avgSec = Math.round(totalTime / totalAttempted);
+        paceEl.textContent = `${avgSec}s / Q`;
+      }
+    }
+
+    // 5. Mistake Vault Health Shield (Live 1:1 Sync with Active Mistakes!)
+    let activeMistakesCount = 0;
+    if (window.db && db.mistakes && typeof db.mistakes.count === 'function') {
+      try {
+        activeMistakesCount = await db.mistakes.count();
+      } catch (e) {}
+    }
+
+    const vIcon = document.getElementById('scVaultIcon');
+    const vStatus = document.getElementById('scVaultStatus');
+    const vCta = document.getElementById('scVaultCtaBtn');
+
+    if (activeMistakesCount === 0) {
+      if (vIcon) vIcon.textContent = '🛡️';
+      if (vStatus) {
+        vStatus.textContent = 'Clean Sheet ✓';
+        vStatus.style.color = 'var(--emerald)';
+      }
+      if (vCta) {
+        vCta.innerHTML = '🛡️ Mistake Vault: Clean Sheet (0 Leaks) →';
+        vCta.style.borderColor = 'var(--line)';
+        vCta.style.color = 'var(--ink)';
+      }
+    } else {
+      if (vIcon) vIcon.textContent = '⚠️';
+      if (vStatus) {
+        vStatus.textContent = `${activeMistakesCount} Traps Risk`;
+        vStatus.style.color = 'var(--red)';
+      }
+      if (vCta) {
+        vCta.innerHTML = `⚠️ Fix ${activeMistakesCount} Mistakes in Vault (-${activeMistakesCount * 5} Marks Risk) →`;
+        vCta.style.borderColor = '#fca5a5';
+        vCta.style.color = '#dc2626';
+      }
+    }
+
+    // 6. Backward-compatibility elements
+    const attOld = document.getElementById('attempted');
+    if (attOld) attOld.textContent = totalAttempted;
+    const negOld = document.getElementById('negBleed');
+    if (negOld) negOld.textContent = activeMistakesCount > 0 ? `-${activeMistakesCount}` : '0';
+    const scoreOld = document.getElementById('lifetimeScore');
+    if (scoreOld) scoreOld.textContent = `${netMarks} pts`;
+    const barOld = document.getElementById('streakBar');
+    if (barOld) barOld.style.width = `${Math.min(100, totalAttempted * 2)}%`;
 
     if (typeof this.updateMistakeBadge === 'function') {
       await this.updateMistakeBadge();

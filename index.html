@@ -185,61 +185,92 @@
         <section class="panel scorecard-panel">
           <div class="scorecard-header">
             <div class="scorecard-title-group">
-              <span class="scorecard-badge">📊 NEET SCORECARD</span>
+              <span class="scorecard-badge">📊 NEET-UG READINESS RADAR</span>
             </div>
-            <span class="scorecard-scale-tag" title="National Testing Agency Official Marking (+4 for correct, -1 for incorrect)">NTA Scale (+4 / -1)</span>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span class="scorecard-scale-tag" id="scColdStartBadge">🌱 Initializing</span>
+              <span class="scorecard-scale-tag" style="background:#f0fdfa;border-color:#99f6e4;color:var(--teal);font-weight:700;">NTA 720 Scale</span>
+            </div>
           </div>
 
-          <div class="scorecard-hero">
-            <div class="scorecard-hero-left">
-              <span class="scorecard-label">Cumulative Net Marks</span>
-              <div class="scorecard-val-row">
-                <strong id="lifetimeScore" class="scorecard-big-score">0 pts</strong>
-                <span class="scorecard-target-pill">Target: 720</span>
+          <!-- LeetCode-Inspired Mastery Hero: Solved Ring + 3-Subject NTA Balance (Physics, Chemistry, Biology) -->
+          <div class="scorecard-lc-hero">
+            <div class="sc-lc-left">
+              <div class="sc-lc-solved-number" id="scSolvedCount">0</div>
+              <div class="sc-lc-solved-label">Solved Correctly</div>
+              <div class="sc-lc-attempted-sub"><span id="scAttemptedCount">0</span> Questions Attempted</div>
+            </div>
+
+            <div class="sc-lc-bars">
+              <div class="sc-lc-bar-item">
+                <div class="sc-lc-bar-header">
+                  <span>🌿 Biology (Botany + Zoology)</span>
+                  <b id="scBioVal">0 / 360 pts</b>
+                </div>
+                <div class="sc-lc-track"><div class="sc-lc-fill sc-fill-bio" id="scBioBar" style="width:0%"></div></div>
+              </div>
+
+              <div class="sc-lc-bar-item">
+                <div class="sc-lc-bar-header">
+                  <span>⚗️ Chemistry (Inorg + Org + Phys)</span>
+                  <b id="scChemVal">0 / 180 pts</b>
+                </div>
+                <div class="sc-lc-track"><div class="sc-lc-fill sc-fill-chem" id="scChemBar" style="width:0%"></div></div>
+              </div>
+
+              <div class="sc-lc-bar-item">
+                <div class="sc-lc-bar-header">
+                  <span>⚛️ Physics (Mechanics + Electrodynamics)</span>
+                  <b id="scPhyVal">0 / 180 pts</b>
+                </div>
+                <div class="sc-lc-track"><div class="sc-lc-fill sc-fill-phy" id="scPhyBar" style="width:0%"></div></div>
               </div>
             </div>
-            <div class="scorecard-hero-right">
-              <span class="scorecard-subtext">Accuracy Pace</span>
-              <div class="bar" title="Practice Consistency Meter"><div class="bar-fill" id="streakBar"></div></div>
-            </div>
           </div>
 
+          <!-- Key Diagnostic Indicators Row -->
           <div class="stats-grid">
-            <div class="stat-pill stat-pill-attempted" title="Total Authentic Questions Solved">
-              <div class="stat-pill-icon">📝</div>
-              <div class="stat-pill-info">
-                <small>Solved</small>
-                <b id="attempted">0</b>
-              </div>
-            </div>
-            <div class="stat-pill stat-pill-accuracy" title="Overall Accuracy Rate">
+            <div class="stat-pill stat-pill-accuracy" title="Overall Accuracy Rate (Unlocks after 5 questions)">
               <div class="stat-pill-icon">🎯</div>
               <div class="stat-pill-info">
-                <small>Accuracy</small>
+                <small>Accuracy Rate</small>
                 <b id="accuracy">—</b>
               </div>
             </div>
-            <div class="stat-pill stat-pill-neg" title="Negative Marks Lost (-1 each)">
-              <div class="stat-pill-icon">⚠️</div>
+            <div class="stat-pill stat-pill-pacing" title="Average seconds spent per question (Target: &lt;60s)">
+              <div class="stat-pill-icon">⏱️</div>
               <div class="stat-pill-info">
-                <small>Neg. Bleed</small>
-                <b id="negBleed" style="color:var(--red)">0</b>
+                <small>Average Pace</small>
+                <b id="scPacingVal">— s/Q</b>
               </div>
             </div>
-            <div class="stat-pill stat-pill-bank" title="Total Offline Curated Master Bank">
+            <div class="stat-pill stat-pill-neg" title="Live status of your Mistake Vault">
+              <div class="stat-pill-icon" id="scVaultIcon">🛡️</div>
+              <div class="stat-pill-info">
+                <small>Vault Shield</small>
+                <b id="scVaultStatus" style="color:var(--emerald)">Clean Sheet</b>
+              </div>
+            </div>
+            <div class="stat-pill stat-pill-bank" title="Curated Offline NCERT Question Bank">
               <div class="stat-pill-icon">📚</div>
               <div class="stat-pill-info">
-                <small>Bank Size</small>
+                <small>NCERT Bank</small>
                 <b>5.64L Qs</b>
               </div>
             </div>
           </div>
 
-          <div class="scorecard-footer-action" style="display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;">
-            <button class="secondary scorecard-mistakes-btn" onclick="App.showMistakes()" title="Review questions you got wrong">
+          <!-- Preserved backward-compatible hidden elements -->
+          <span id="attempted" style="display:none">0</span>
+          <span id="negBleed" style="display:none">0</span>
+          <span id="lifetimeScore" style="display:none">0 pts</span>
+          <div id="streakBar" style="display:none"></div>
+
+          <div class="scorecard-footer-action" style="display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-top:14px;">
+            <button class="secondary scorecard-mistakes-btn" style="margin-top:0;flex:1;" onclick="App.showMistakes()" id="scVaultCtaBtn" title="Review questions you got wrong">
               ❌ Review My Mistakes Vault →
             </button>
-            <button class="secondary" style="font-size:12px;padding:6px 12px;color:var(--muted);border-color:var(--line);" onclick="App.resetScorecardProgress()" title="Reset practice scorecard statistics to 0">
+            <button class="secondary" style="font-size:12px;padding:9px 14px;color:var(--muted);border-color:var(--line);" onclick="App.resetScorecardProgress()" title="Reset practice scorecard statistics to 0">
               🔄 Reset Scorecard
             </button>
           </div>
