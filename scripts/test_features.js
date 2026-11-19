@@ -1,4 +1,4 @@
-// scripts/test_features.js - Automated Test for Flashcards, Planner, and Solution Inspector
+// scripts/test_features.js - Automated Test for Flashcards, Planner, and Test Analysis
 const assert = require('assert');
 
 // 1. Mock minimal DOM environment
@@ -57,14 +57,22 @@ global.db = {
   },
   mistakes: {
     put: async (item) => { return 1; }
+  },
+  sessions: {
+    add: async (s) => { return 1; }
   }
 };
 
 // 2. Load the modules
+window.App = window.App || {};
+window.App.showView = () => {};
+window.App.updateTopStats = async () => {};
+window.App.updateMockKpis = async () => {};
+
 require('../data/flashcards_data.js');
 require('../js/flashcards.js');
 require('../js/planner.js');
-require('../js/inspector.js');
+require('../js/engine.js');
 
 async function runTests() {
   console.log('--- STARTING COMPREHENSIVE FEATURES TEST ---');
@@ -109,47 +117,56 @@ async function runTests() {
   await window.App.refreshPlannerData();
   console.log(`✓ Study Planner Passed: Target configuration, Countdown Ticker, Heatmap generation tested`);
 
-  // TEST 3: Solution Inspector & Diagnostic Analyzer
-  window.App.initSolutionInspector();
-  assert(window.App.inspectorActiveQuestion !== null, 'Active question should be set');
-  
-  // Physics Range Trap Test
-  const phyTrapWork = `Formula: R = (u^2 * sin(theta)) / g
-Step 1: R = (1600 * 0.5) / 10
-Step 2: R = 80 m
-Selected Option: B`;
-  const result1 = window.App.evaluateSteps(phyTrapWork, window.App.getDemoQuestion());
-  assert(result1.hasError === true, 'Trap error should be detected');
-  assert(result1.suggestedTag === 'Formula Forgotten', 'Error tag should be Formula Forgotten');
-  console.log(`✓ Solution Inspector Passed: Trap detected (${result1.suggestedTag}) with breakdown: ${result1.steps.length} steps`);
+  // TEST 3: In-Depth Exam Analysis & Mini-Test Mode
+  const mockQuestions = [
+    {
+      id: "q1",
+      subject: "Physics",
+      chapter: "Kinematics",
+      subtopic: "Projectile Motion",
+      question: "Sample Q1",
+      options: ["A1", "B1", "C1", "D1"],
+      correct_option: 0,
+      difficulty: "medium",
+      solution: "Principle and derivation"
+    },
+    {
+      id: "q2",
+      subject: "Chemistry",
+      chapter: "Thermodynamics",
+      subtopic: "Enthalpy",
+      question: "Sample Q2",
+      options: ["A2", "B2", "C2", "D2"],
+      correct_option: 1,
+      difficulty: "hard",
+      solution: "Principle and derivation"
+    }
+  ];
 
-  // Chemistry Slip Test
-  const chemDemoQ = {
-    subject: "Chemistry",
-    chapter: "Thermodynamics",
-    question: "Calculate Delta G given Delta H = -100 kJ and T Delta S = -20 J",
-    answer: "A"
-  };
-  const chemTrapWork = `M = 0.1 / 500 mL`;
-  const result2 = window.App.evaluateSteps(chemTrapWork, chemDemoQ);
-  assert(result2.hasError === true, 'Unit conversion trap should be detected');
-  console.log(`✓ Solution Inspector Passed: Chemistry unit trap detected (${result2.suggestedTag})`);
+  // Test session launch in Mini-Test mode (isExamMode = true)
+  window.App.beginSession(mockQuestions, "Test Mini-Exam", false, false, 600, false, true);
+  assert(window.App.isExamMode === true, 'isExamMode should be true');
+  assert(window.App.session.length === 2, 'Session length should be 2');
 
-  // Genetics Dihybrid Ratio Test
-  const bioDemoQ = {
-    subject: "Botany",
-    chapter: "Principles of Inheritance and Variation",
-    question: "In a dihybrid cross, find number of recombinant progeny out of 1600",
-    answer: "C"
-  };
-  const bioTrapWork = `Recombinant fraction = 9/16\nTotal = 9/16 * 1600 = 900`;
-  const result3 = window.App.evaluateSteps(bioTrapWork, bioDemoQ);
-  assert(result3.hasError === true, 'Genetics ratio trap should be detected');
-  console.log(`✓ Solution Inspector Passed: Genetics ratio trap detected (${result3.suggestedTag})`);
+  // Answer Q1 correctly, Q2 incorrectly
+  window.App.chooseOption(0); // correct for Q1
+  window.App.states[0].timeSpent = 45;
+  window.App.index = 1;
+  window.App.chooseOption(0); // wrong for Q2 (correct is 1)
+  window.App.states[1].timeSpent = 12; // rushed
 
-  // Log to Mistake Vault
-  await window.App.logInspectorMistake(result1.suggestedTag);
-  console.log(`✓ Mistake Vault Logging Tested`);
+  // Finish session
+  await window.App.finishSession();
+  assert(window.App.testAnalysis !== null, 'testAnalysis should be generated');
+  assert(window.App.testAnalysis.totalCorrect === 1, '1 correct question expected');
+  assert(window.App.testAnalysis.totalWrong === 1, '1 wrong question expected');
+  assert(window.App.testAnalysis.netMarks === 3, 'Net marks should be +4 - 1 = 3');
+
+  // Verify "Why It Went Wrong" diagnostic on Q2
+  const wrongItem = window.App.testAnalysis.questions.find(item => item.isWrong);
+  assert(wrongItem !== undefined, 'Wrong item should exist');
+  assert(wrongItem.errorTag.includes('Rush') || wrongItem.errorTag.includes('Trap'), 'Error tag should identify rush or trap');
+  console.log(`✓ Exam In-Depth Analysis Passed: Net marks (3/8), Accuracy (50%), Diagnostic Tag (${wrongItem.errorTag})`);
 
   console.log('--- ALL FEATURE TESTS PASSED SUCCESSFULLY! ---');
   process.exit(0);

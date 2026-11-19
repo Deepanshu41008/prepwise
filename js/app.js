@@ -544,7 +544,7 @@ Object.assign(window.App, {
   },
 
   showView(id) {
-    ['dashboard', 'setup', 'practice', 'streamerView', 'bookmarksView', 'mistakesView', 'progressView', 'growthBoardView', 'timedEndlessSetup', 'diagnosticsView', 'mocksHubView', 'flashcardsView', 'plannerView', 'solutionInspectorView'].forEach(v => {
+    ['dashboard', 'setup', 'practice', 'streamerView', 'bookmarksView', 'mistakesView', 'progressView', 'growthBoardView', 'timedEndlessSetup', 'diagnosticsView', 'mocksHubView', 'flashcardsView', 'plannerView'].forEach(v => {
       const el = document.getElementById(v);
       if (el) el.style.display = v === id ? 'block' : 'none';
     });
