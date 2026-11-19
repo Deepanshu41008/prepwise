@@ -1056,8 +1056,14 @@ Object.assign(window.App, {
           subject: item.q.subject,
           chapter: item.q.chapter,
           subtopic: item.q.subtopic || 'General',
-          errorTag: tag || item.errorTag || 'Concept Review Needed'
+          errorTag: tag || item.errorTag || 'Concept Review Needed',
+          q: item.q,
+          timeSpent: item.st?.timeSpent || 0,
+          timestamp: Date.now()
         });
+        if (typeof window.App?.updateMistakeBadge === 'function') {
+          await window.App.updateMistakeBadge();
+        }
       }
       const btn = document.getElementById(`taSaveBtn_${idx}`);
       if (btn) {

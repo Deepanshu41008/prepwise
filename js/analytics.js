@@ -345,6 +345,24 @@ Object.assign(window.App, {
     const container = document.getElementById('mistakeList');
     if (!container) return;
 
+    // Safely resolve question objects if missing or unhydrated
+    for (const m of items) {
+      if (!m.q || !m.q.question) {
+        if (window.db && db.questions) {
+          try {
+            const found = await db.questions.get(m.questionId);
+            if (found) m.q = found;
+          } catch (e) {}
+        }
+      }
+      if (!m.q || !m.q.question) {
+        m.q = {
+          question: `[Saved Mistake Concept] ${m.chapter || 'Practice Question'} · ${m.subtopic || 'Concept Gap'}`,
+          solution: 'Review this high-yield NCERT concept in your chapter drill.'
+        };
+      }
+    }
+
     // Fetch bookmarks to check which ones are saved to "previous_mistakes"
     let savedMistakeIds = new Set();
     try {
@@ -359,6 +377,8 @@ Object.assign(window.App, {
       const isSaved = savedMistakeIds.has(m.questionId);
       const safeChap = (m.chapter || '').replace(/'/g, "\\'");
       const safeSub = (m.subtopic || '').replace(/'/g, "\\'");
+      const qText = (m.q && m.q.question) ? m.q.question : `[Saved Mistake] ${m.chapter || ''} · ${m.subtopic || ''}`;
+      const solText = (m.q && m.q.solution) ? m.q.solution : 'Review in chapter drill.';
       return `
       <article class="bookmark-item">
         <div style="flex:1">
@@ -367,8 +387,8 @@ Object.assign(window.App, {
             <span class="tag" style="background:#f1f5f9;color:var(--muted)">⏱️ ${m.timeSpent || 0}s spent</span>
             ${isSaved ? '<span class="tag" style="background:#ede9fe;color:#6d28d9;border:1px solid #ddd6fe;font-weight:700;">⭐ Saved in Previous Mistakes</span>' : ''}
           </div>
-          <h3>${m.q.question}</h3>
-          <p>${m.q.solution}</p>
+          <h3>${qText}</h3>
+          <p>${solText}</p>
           <div class="mistake-tags">
             ${tags.map(t => `
               <button class="mistake-tag ${m.errorTag === t ? 'active' : ''}" onclick="App.tagMistake('${m.questionId}','${t}')">
@@ -390,8 +410,25 @@ Object.assign(window.App, {
         </div>
       </article>
       `;
-    }).join('') : '<div class="empty">Zero active mistakes! Great work — keep practicing to audit your negative mark bleeds.</div>';
+    }).join('') : `
+      <div class="empty">
+        <div style="font-size:26px;margin-bottom:8px;">🎉</div>
+        <b style="font-size:16px;">Zero Active Mistakes in Vault!</b>
+        <p style="color:var(--muted);margin-top:4px;font-size:13.5px;">All logged negative marks have been mastered or cleared. Keep practicing to identify fresh revision areas.</p>
+        <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+          <button class="secondary" style="font-size:12.5px;padding:7px 16px;" onclick="App.resetScorecardProgress()">
+            🔄 Reset Lifetime Scorecard to 0
+          </button>
+          <button class="primary" style="font-size:12.5px;padding:7px 16px;" onclick="App.openSetup()">
+            ▶ Start Practice Drill →
+          </button>
+        </div>
+      </div>
+    `;
 
+    if (typeof this.updateMistakeBadge === 'function') {
+      await this.updateMistakeBadge();
+    }
     this.typesetMath();
   },
 
@@ -431,6 +468,9 @@ Object.assign(window.App, {
 
   async resolveMistake(id) {
     await db.mistakes.delete(id);
+    if (typeof this.updateMistakeBadge === 'function') {
+      await this.updateMistakeBadge();
+    }
     this.showMistakes();
   },
 
@@ -487,10 +527,30 @@ Object.assign(window.App, {
       filtered = filtered.filter(b => b.subject && b.subject.toLowerCase() === this.currentBmSubject.toLowerCase());
     }
 
+    // Safely hydrate question objects if missing
+    for (const b of filtered) {
+      if (!b.q || !b.q.question) {
+        if (window.db && db.questions) {
+          try {
+            const found = await db.questions.get(b.questionId);
+            if (found) b.q = found;
+          } catch (e) {}
+        }
+      }
+      if (!b.q || !b.q.question) {
+        b.q = {
+          question: `[Saved Question] ${b.chapter || 'Practice Question'} · ${b.subtopic || 'Concept Review'}`,
+          solution: 'Review this question in your practice drills.'
+        };
+      }
+    }
+
     container.innerHTML = filtered.length ? filtered.map(b => {
       const isMistake = b.folder === 'previous_mistakes';
       const safeChap = (b.chapter || '').replace(/'/g, "\\'");
       const safeSub = (b.subtopic || '').replace(/'/g, "\\'");
+      const qText = (b.q && b.q.question) ? b.q.question : `[Saved Question] ${b.chapter || ''} · ${b.subtopic || ''}`;
+      const solText = (b.q && b.q.solution) ? b.q.solution : 'Review in chapter drill.';
       return `
       <article class="bookmark-item">
         <div style="flex:1">
@@ -500,8 +560,8 @@ Object.assign(window.App, {
             ${b.errorTag ? `<span class="tag" style="background:#fee2e2;color:#b91c1c;font-weight:600;">🏷️ Root Cause: ${b.errorTag}</span>` : ''}
             <span class="tag" style="background:#f1f5f9;color:var(--muted)">Saved ${new Date(b.savedAt || Date.now()).toLocaleDateString()}</span>
           </div>
-          <h3>${b.q.question}</h3>
-          <p>${b.q.solution}</p>
+          <h3>${qText}</h3>
+          <p>${solText}</p>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
           <button class="secondary" style="border-color:#4f46e5;color:#4f46e5;font-weight:600;" onclick="App.launchConceptCalibrationDrill('${safeChap}','${safeSub}')">

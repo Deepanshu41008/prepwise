@@ -537,7 +537,7 @@ Object.assign(window.App, {
 
   async updateTopStats() {
     const attempts = await db.attempts.toArray();
-    const correct = attempts.filter(a => a.correct === 1).length;
+    const correct = attempts.filter(a => a.correct === 1 || a.correct === true).length;
     const wrong = attempts.length - correct;
     const netMarks = (correct * 4) - wrong;
 
@@ -550,8 +550,41 @@ Object.assign(window.App, {
     if (attEl) attEl.textContent = attempts.length;
     if (accEl) accEl.textContent = attempts.length ? `${Math.round((correct / attempts.length) * 100)}%` : '—';
     if (negEl) negEl.textContent = wrong > 0 ? `-${wrong}` : '0';
-    if (scoreEl) scoreEl.textContent = `${netMarks} pts`;
+    if (scoreEl) scoreEl.textContent = attempts.length ? `${netMarks} pts` : '0 pts';
     if (barEl) barEl.style.width = `${Math.min(100, attempts.length * 2)}%`;
+
+    if (typeof this.updateMistakeBadge === 'function') {
+      await this.updateMistakeBadge();
+    }
+  },
+
+  async updateMistakeBadge() {
+    if (window.db && db.mistakes && typeof db.mistakes.count === 'function') {
+      try {
+        const cnt = await db.mistakes.count();
+        const b = document.getElementById('navMistakeCount');
+        if (b) {
+          if (cnt > 0) {
+            b.textContent = cnt;
+            b.style.display = 'inline-block';
+          } else {
+            b.textContent = '0';
+            b.style.display = 'none';
+          }
+        }
+      } catch (e) {
+        console.warn('updateMistakeBadge notice:', e);
+      }
+    }
+  },
+
+  async resetScorecardProgress() {
+    if (!confirm('Reset your lifetime scorecard statistics back to clean baseline (0 Solved, 0 pts)?\n\nYour saved questions will be preserved.')) return;
+    if (window.db && db.attempts) await db.attempts.clear();
+    if (window.db && db.sessions) await db.sessions.clear();
+    await this.updateTopStats();
+    if (typeof this.updateMistakeBadge === 'function') await this.updateMistakeBadge();
+    if (typeof this.showMistakes === 'function') this.showMistakes();
   },
 
   showView(id) {
@@ -570,19 +603,9 @@ Object.assign(window.App, {
       btn.classList.toggle('active', target === id);
     });
 
-    // Update mistake count badge in sidebar
-    if (window.db && db.attempts && typeof db.attempts.where === 'function') {
-      db.attempts.where('correct').equals(0).count().then(cnt => {
-        const b = document.getElementById('navMistakeCount');
-        if (b) {
-          if (cnt > 0) {
-            b.textContent = cnt;
-            b.style.display = 'inline-block';
-          } else {
-            b.style.display = 'none';
-          }
-        }
-      }).catch(() => {});
+    // Update mistake count badge in sidebar based on active mistakes
+    if (typeof this.updateMistakeBadge === 'function') {
+      this.updateMistakeBadge();
     }
 
     if (typeof window.scrollTo === 'function') {
